@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 
-import gi, os, json, sys, dbus, requests
+import gi, os, json, sys, dbus
 import dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
 from multiprocessing import Process
-from time import sleep
 
 gi.require_version('Gtk', '3.0')
-gi.require_version('AppIndicator3', '0.1')
-from gi.repository import Gtk, Gdk, GdkPixbuf, AppIndicator3
+try:
+    gi.require_version('AppIndicator3', '0.1')
+    from gi.repository import AppIndicator3
+    HAS_APP_INDICATOR = True
+except (ValueError, ImportError):
+    HAS_APP_INDICATOR = False
+from gi.repository import Gtk, GdkPixbuf
 
 
 class DBUSService(dbus.service.Object):
@@ -47,8 +51,7 @@ class DBUSService(dbus.service.Object):
                 self.window.widgets[profile]['mine_switch'].set_active(True)
         if close_window: self.window.hide()
         elif open_window:
-            self.window.add(self.window.box)
-            self.window.show_all()
+            self.window.show_window()
 
 def call_instance():
     try:
@@ -69,6 +72,7 @@ def call_instance():
 class Window(Gtk.Window):
     def __init__(self):
         super().__init__()
+        self.widgets = {}
         self.load_data()
         self.config = self.get_config()
         self.stop_mining(self.profiles[0], restart=False, save=False)
@@ -156,7 +160,8 @@ class Window(Gtk.Window):
     
     def show_window(self):
         self.draw()
-        self.show_all()
+        if not self.get_visible():
+            self.show_all()
     
     def hide_window(self, widget):
         self.hide()
@@ -167,7 +172,6 @@ class Window(Gtk.Window):
         self.set_icon(self.icon)
         self.set_border_width(20)
         self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
-        self.widgets = {}
 
 
         for profile in self.profiles:
@@ -355,10 +359,12 @@ class Window(Gtk.Window):
         else: self.start_mining(self.profiles[2])
 
     def load_data(self):
-        self.user = os.getlogin()
-        self.settings_path = f'/home/{self.user}/.config/xmrigui.json'
+        self.user = os.environ.get('USER') or 'user'
+        self.settings_path = os.path.expanduser('~/.config/xmrigui.json')
         self.xmrig_path = '/opt/xmrigui/xmrig'
         self.icon_path = '/usr/share/icons/hicolor/256x256/apps/xmrigui.png'
+        if not os.path.exists(self.icon_path):
+            self.icon_path = 'xmrigui.png' # Fallback auf lokales Icon
         self.cuda_plugin_path = '/opt/xmrigui/libxmrig-cuda.so'
         self.profiles = ['profile-0', 'profile-1', 'profile-2']
         self.cryptos = [
@@ -374,7 +380,15 @@ class Window(Gtk.Window):
             'Safex',
             'ArQmA',
             'NINJA',
-            'Raptoreum'
+            'Raptoreum',
+            'Wownero',
+            'Scala',
+            'Haven Protocol',
+            'MoneroV',
+            'Epic Cash',
+            'Graft',
+            'Oxen',
+            'Stellite'
         ]
         self.algos = [
             'rx/0',
@@ -389,7 +403,15 @@ class Window(Gtk.Window):
             'rx/sfx',
             'rx/arq',
             'argon2/ninja',
-            'gr'
+            'gr',
+            'rx/wow',
+            'panthera',
+            'cn-heavy/xhv',
+            'rx/v',
+            'rx/epic',
+            'rx/graft',
+            'rx/loki',
+            'rx/xtl'
         ]
         self.raw_config = '''{
     "profile-0": {
@@ -441,6 +463,8 @@ class Window(Gtk.Window):
 
 class AppIndicator():
     def __init__(self, window):
+        if not HAS_APP_INDICATOR:
+            return
         self.window = window
         self.indicator = AppIndicator3.Indicator.new('xmrigui', os.path.abspath(self.window.icon_path), AppIndicator3.IndicatorCategory.SYSTEM_SERVICES)
         self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
@@ -476,15 +500,14 @@ class AppIndicator():
     
     def show(self, widget):
         if not self.window.is_visible():
-            self.window = Window()
-            self.window.connect('destroy', self.window.hide_window)
             self.window.show_window()
 
 
 def main():
     win = Window()
-    win.connect('destroy', win.close)
-    indicator = AppIndicator(win)
+    win.connect('destroy', Gtk.main_quit)
+    if HAS_APP_INDICATOR:
+        indicator = AppIndicator(win)
     service = DBUSService(win)
     Gtk.main()
 
