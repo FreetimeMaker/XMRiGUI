@@ -74,6 +74,7 @@ class Window(Gtk.Window):
         super().__init__()
         self.widgets = {}
         self.load_data()
+        self._initialize_profile_widgets() # Initialize widgets before config and mining calls
         self.config = self.get_config()
         self.stop_mining(self.profiles[0], restart=False, save=False)
         if self.config[self.profiles[0]]['mine']: self.start_mining(self.profiles[0], save=False)
@@ -102,6 +103,7 @@ class Window(Gtk.Window):
         if save:
             self.config[profile]['mine'] = True
             self.save(restart=False)
+        self.widgets[profile]['status_label'].set_text('Status: Mining...')
 
         args = ''
         if not self.config[profile]['default_args']:
@@ -121,6 +123,7 @@ class Window(Gtk.Window):
     def stop_mining(self, profile, restart=True, save=True):
         os.system('killall xmrig')
 
+        self.widgets[profile]['status_label'].set_text('Status: Stopped.')
         if restart:
             if profile == self.profiles[0] and self.config[self.profiles[1]]['mine']: self.start_mining(self.profiles[1], save=False)
             if profile == self.profiles[0] and self.config[self.profiles[2]]['mine']: self.start_mining(self.profiles[2], save=False)
@@ -196,6 +199,7 @@ class Window(Gtk.Window):
             
             self.widgets[profile]['mine_box'].pack_start(self.widgets[profile]['mine_label'], False, False, 10)
             self.widgets[profile]['mine_box'].pack_start(self.widgets[profile]['mine_switch'], False, False, 10)
+            self.widgets[profile]['mine_box'].pack_start(self.widgets[profile]['status_label'], False, False, 10)
             self.widgets[profile]['main_box'].pack_start(self.widgets[profile]['image'], False, False, 10)
             self.widgets[profile]['main_box'].pack_start(self.widgets[profile]['name'], False, False, 10)
             self.widgets[profile]['main_box'].pack_start(self.widgets[profile]['mine_box'], False, False, 10)
@@ -358,6 +362,12 @@ class Window(Gtk.Window):
         if self.config[self.profiles[2]]['mine']: self.stop_mining(self.profiles[2])
         else: self.start_mining(self.profiles[2])
 
+    def _initialize_profile_widgets(self):
+        """Initializes basic widgets for each profile, especially status labels."""
+        for profile in self.profiles:
+            self.widgets[profile] = {}
+            self.widgets[profile]['status_label'] = Gtk.Label()
+            self.widgets[profile]['status_label'].set_text('Status: Initializing...') # Default status before actual state is known
     def load_data(self):
         self.user = os.environ.get('USER') or 'user'
         self.settings_path = os.path.expanduser('~/.config/xmrigui.json')
