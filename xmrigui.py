@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import gi, os, json, sys, dbus
+import gi, os, json, sys, dbus, subprocess, re
 import dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
 from multiprocessing import Process
@@ -12,7 +12,7 @@ try:
     HAS_APP_INDICATOR = True
 except (ValueError, ImportError):
     HAS_APP_INDICATOR = False
-from gi.repository import Gtk, GdkPixbuf
+from gi.repository import Gtk, GdkPixbuf, GLib
 
 
 class DBUSService(dbus.service.Object):
@@ -73,6 +73,7 @@ class Window(Gtk.Window):
     def __init__(self):
         super().__init__()
         self.widgets = {}
+        self.processes = {}
         self.load_data()
         self._initialize_profile_widgets() # Initialize widgets before config and mining calls
         self.config = self.get_config()
@@ -80,7 +81,7 @@ class Window(Gtk.Window):
         if self.config[self.profiles[0]]['mine']: self.start_mining(self.profiles[0], save=False)
         if self.config[self.profiles[1]]['mine']: self.start_mining(self.profiles[1], save=False)
         if self.config[self.profiles[2]]['mine']: self.start_mining(self.profiles[2], save=False)
-        if not (self.config[self.profiles[0]]['mine'] or self.config[self.profiles[1]]['mine'] or self.config[self.profiles[2]]['mine']): self.show_window()
+        self.show_window() # Always show the window unless explicitly closed by D-Bus args
 
     def get_config(self):
         try:
@@ -118,10 +119,21 @@ class Window(Gtk.Window):
             if not self.config[profile]['cpu']: args += ' --no-cpu'
         if self.config[profile]['args']: args += f' {self.config[profile]["args"]}'
 
-        os.system(self.xmrig_path + ' --background' + args)
+        # Start XMRig and capture output
+        cmd = f"{self.xmrig_path} --no-color {args}"
+        try:
+            self.processes[profile] = subprocess.Popen(
+                cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
+            # Watch the output pipe for new lines
+            GLib.io_add_watch(self.processes[profile].stdout, GLib.IO_IN | GLib.IO_HUP, self.update_log, profile)
+        except Exception as e:
+            self.widgets[profile]['status_label'].set_text(f"Error: {str(e)}")
     
     def stop_mining(self, profile, restart=True, save=True):
         os.system('killall xmrig')
+        if profile in self.processes:
+            del self.processes[profile]
 
         self.widgets[profile]['status_label'].set_text('Status: Stopped.')
         if restart:
@@ -178,7 +190,6 @@ class Window(Gtk.Window):
 
 
         for profile in self.profiles:
-            self.widgets[profile] = {}
             self.widgets[profile]['box'] = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=30)
             self.widgets[profile]['main_box'] = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20)
 
@@ -200,10 +211,19 @@ class Window(Gtk.Window):
             self.widgets[profile]['mine_box'].pack_start(self.widgets[profile]['mine_label'], False, False, 10)
             self.widgets[profile]['mine_box'].pack_start(self.widgets[profile]['mine_switch'], False, False, 10)
             self.widgets[profile]['mine_box'].pack_start(self.widgets[profile]['status_label'], False, False, 10)
+            self.widgets[profile]['mine_box'].pack_start(self.widgets[profile]['info_label'], False, False, 10)
             self.widgets[profile]['main_box'].pack_start(self.widgets[profile]['image'], False, False, 10)
             self.widgets[profile]['main_box'].pack_start(self.widgets[profile]['name'], False, False, 10)
             self.widgets[profile]['main_box'].pack_start(self.widgets[profile]['mine_box'], False, False, 10)
 
+            # Log Output View
+            self.widgets[profile]['log_expander'] = Gtk.Expander(label='Miner Output (Live)')
+            self.widgets[profile]['log_view'] = Gtk.TextView(buffer=self.widgets[profile]['log_buffer'])
+            self.widgets[profile]['log_view'].set_editable(False)
+            self.widgets[profile]['log_scroll'] = Gtk.ScrolledWindow()
+            self.widgets[profile]['log_scroll'].set_min_content_height(150)
+            self.widgets[profile]['log_scroll'].add(self.widgets[profile]['log_view'])
+            self.widgets[profile]['log_expander'].add(self.widgets[profile]['log_scroll'])
             
             self.widgets[profile]['settings'] = Gtk.Grid(column_homogeneous=True, column_spacing=10, row_spacing=10)
 
@@ -317,6 +337,7 @@ class Window(Gtk.Window):
             self.widgets[profile]['box'].pack_start(self.widgets[profile]['main_box'], False, False, 10)
             self.widgets[profile]['box'].pack_start(self.widgets[profile]['settings'], False, False, 10)
             self.widgets[profile]['box'].pack_start(self.widgets[profile]['advanched_settings'], False, False, 10)
+            self.widgets[profile]['box'].pack_start(self.widgets[profile]['log_expander'], True, True, 10)
 
 
         
@@ -362,12 +383,85 @@ class Window(Gtk.Window):
         if self.config[self.profiles[2]]['mine']: self.stop_mining(self.profiles[2])
         else: self.start_mining(self.profiles[2])
 
+    def update_log(self, source, condition, profile):
+        if condition & GLib.IO_HUP:
+            return False
+        
+        line = source.readline().decode('utf-8', errors='replace')
+        if line:
+            buffer = self.widgets[profile]['log_buffer']
+            lower_line = line.lower()
+            
+            # Farbschema bestimmen
+            tag = None
+            if "accepted" in lower_line:
+                tag = "success"
+            elif "error" in lower_line or "rejected" in lower_line or "failed" in lower_line:
+                tag = "error"
+            elif "net" in lower_line or "pool" in lower_line:
+                tag = "info"
+            elif "speed" in lower_line:
+                tag = "warning"
+
+            # Text mit Farbe einfügen
+            if tag:
+                buffer.insert_with_tags_by_name(buffer.get_end_iter(), line, tag)
+            else:
+                buffer.insert(buffer.get_end_iter(), line)
+            
+            # Limit buffer to last 500 lines
+            if buffer.get_line_count() > 500:
+                buffer.delete(buffer.get_start_iter(), buffer.get_iter_at_line(1))
+
+            # Auto-scroll
+            adj = self.widgets[profile]['log_scroll'].get_vadjustment()
+            adj.set_value(adj.get_upper() - adj.get_page_size())
+
+            # Suche nach Hashrate und Shares
+            speed_match = re.search(r"speed 10s/60s/15m\s+([\d.]+)", line)
+            if speed_match:
+                self.widgets[profile]['last_speed'] = speed_match.group(1)
+            
+            shares_match = re.search(r"accepted\s+\((\d+)/(\d+)\)", line)
+            if shares_match:
+                self.widgets[profile]['last_shares'] = f"{shares_match.group(1)}/{shares_match.group(2)}"
+
+            # Labels aktualisieren
+            speed = self.widgets[profile].get('last_speed', '0.0')
+            shares = self.widgets[profile].get('last_shares', '0/0')
+            self.widgets[profile]['info_label'].set_markup(f"<b>Speed:</b> {speed} H/s | <b>Shares:</b> {shares}")
+
+            # Erweiterte Status-Anzeige
+            if "connected to" in lower_line:
+                pool_addr = re.search(r"to\s+([^\s]+)", line)
+                status_text = f"Status: Verbunden mit {pool_addr.group(1) if pool_addr else 'Pool'}"
+                self.widgets[profile]['status_label'].set_text(status_text)
+            elif "new job" in lower_line:
+                self.widgets[profile]['status_label'].set_text("Status: Neuer Job erhalten")
+            elif "ready" in lower_line:
+                self.widgets[profile]['status_label'].set_text("Status: Bereit")
+            elif "accepted" in lower_line:
+                self.widgets[profile]['status_label'].set_text("Status: Mining (Share akzeptiert!)")
+
+            return True
+        return False
+
     def _initialize_profile_widgets(self):
         """Initializes basic widgets for each profile, especially status labels."""
         for profile in self.profiles:
             self.widgets[profile] = {}
             self.widgets[profile]['status_label'] = Gtk.Label()
             self.widgets[profile]['status_label'].set_text('Status: Initializing...') # Default status before actual state is known
+            self.widgets[profile]['info_label'] = Gtk.Label()
+            self.widgets[profile]['info_label'].set_markup('<b>Speed:</b> 0 H/s | <b>Shares:</b> 0/0')
+            
+            # Log Buffer mit Farbtags initialisieren
+            buffer = Gtk.TextBuffer()
+            buffer.create_tag("info", foreground="#3498db")    # Blau für Netzwerk
+            buffer.create_tag("success", foreground="#2ecc71") # Grün für Shares
+            buffer.create_tag("warning", foreground="#f1c40f") # Gelb für Speed-Updates
+            buffer.create_tag("error", foreground="#e74c3c")   # Rot für Fehler
+            self.widgets[profile]['log_buffer'] = buffer
     def load_data(self):
         self.user = os.environ.get('USER') or 'user'
         self.settings_path = os.path.expanduser('~/.config/xmrigui.json')
