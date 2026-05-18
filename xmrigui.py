@@ -196,7 +196,7 @@ class Window(Gtk.Window):
             self.widgets[profile]['pixbuf'] = GdkPixbuf.Pixbuf.new_from_file_at_scale(filename=self.icon_path, width=128, height=128, preserve_aspect_ratio=True)
             self.widgets[profile]['image'] = Gtk.Image.new_from_pixbuf(self.widgets[profile]['pixbuf'])
             self.widgets[profile]['name'] = Gtk.Label()
-            self.widgets[profile]['name'].set_markup('<big>XMRiGUI</big>\nmade by LinuxHeki\n<a href="https://github.com/LinuxHeki/XMRiGUI">Source code</a>')
+            self.widgets[profile]['name'].set_markup('<big>XMRiGUI</big>\nmade by Freetime Maker\n<a href="https://github.com/FreetimeMaker/XMRiGUI">Source code</a>')
             
             self.widgets[profile]['mine_box'] = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
             self.widgets[profile]['mine_label'] = Gtk.Label()
@@ -437,11 +437,11 @@ class Window(Gtk.Window):
                 status_text = f"Status: Verbunden mit {pool_addr.group(1) if pool_addr else 'Pool'}"
                 self.widgets[profile]['status_label'].set_text(status_text)
             elif "new job" in lower_line:
-                self.widgets[profile]['status_label'].set_text("Status: Neuer Job erhalten")
+                self.widgets[profile]['status_label'].set_text("Status: New Job received")
             elif "ready" in lower_line:
-                self.widgets[profile]['status_label'].set_text("Status: Bereit")
+                self.widgets[profile]['status_label'].set_text("Status: Ready")
             elif "accepted" in lower_line:
-                self.widgets[profile]['status_label'].set_text("Status: Mining (Share akzeptiert!)")
+                self.widgets[profile]['status_label'].set_text("Status: Mining (Share accepted!)")
 
             return True
         return False
@@ -521,8 +521,8 @@ class Window(Gtk.Window):
     "profile-0": {
         "mine": false,
         "pool": "POOL",
-        "user": "YOUR_MONERO_WALLET",
-        "password": "YOUR_WORKER_NAME",
+        "user": "49szz88CqMWGgyDxp7VqvBS62pGLQcV4YPSBHcLwtxAXLz1Wngf8vW6is4w13Au7C2RovrTiJQaGDV5VBhFnyMBsM44Pn2P",
+        "password": "XMRiGUI",
         "donate": "1",
         "threads": "0",
         "cuda": false,
@@ -535,8 +535,8 @@ class Window(Gtk.Window):
     "profile-1": {
         "mine": false,
         "pool": "POOL",
-        "user": "YOUR_MONERO_WALLET",
-        "password": "YOUR_WORKER_NAME",
+        "user": "49szz88CqMWGgyDxp7VqvBS62pGLQcV4YPSBHcLwtxAXLz1Wngf8vW6is4w13Au7C2RovrTiJQaGDV5VBhFnyMBsM44Pn2P",
+        "password": "XMRiGUI",
         "donate": "1",
         "threads": "0",
         "cuda": false,
@@ -549,8 +549,8 @@ class Window(Gtk.Window):
     "profile-2": {
         "mine": false,
         "pool": "de.monero.herominers.com:1111",
-        "user": "45xutTV4zsmBWTiEwxjt5z2XpPyKMf4iRc2WmWiRcf4DVHgSsCyCyUMWTvBSZjCTwP9678xG6Re9dUKhBScPmqKN6DUXaHF",
-        "password": "Donate",
+        "user": "49szz88CqMWGgyDxp7VqvBS62pGLQcV4YPSBHcLwtxAXLz1Wngf8vW6is4w13Au7C2RovrTiJQaGDV5VBhFnyMBsM44Pn2P",
+        "password": "XMRiGUI",
         "donate": "1",
         "threads": "1",
         "cuda": false,
