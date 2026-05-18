@@ -1,39 +1,25 @@
-.PHONY: install uninstall clean deb
+APP_NAME = XMRiGUI
+VERSION = 1.4.0
+SCRIPT = xmrigui.py
+ICON = xmrigui.png
 
-package = xmrigui_1.3.0_amd64
+.PHONY: all run build-linux build-windows clean deps
 
-install:
-	cp xmrigui.py /usr/local/bin/xmrigui
-	mkdir -p /opt/xmrigui
-	cp xmrig /opt/xmrigui/
-	mkdir -p /usr/share/icons/hicolor/256x256/apps
-	cp xmrigui.png /usr/share/icons/hicolor/256x256/apps/
-	cp xmrigui.desktop /usr/share/applications/
-	cp xmrigui_as_root.desktop /usr/share/applications/
-	cp org.freedesktop.policykit.xmrigui.policy /usr/share/polkit-1/actions/org.freedesktop.policykit.xmrigui.policy
+all: run
 
-uninstall:
-	rm /usr/local/bin/xmrigui
-	rm -rf /opt/xmrigui
-	rm /usr/share/icons/hicolor/256x256/apps/xmrigui.png
-	rm /usr/share/applications/xmrigui.desktop
-	rm /usr/share/applications/xmrigui_as_root.desktop
-	rm /usr/share/polkit-1/actions/org.freedesktop.policykit.xmrigui.policy
+run:
+	python3 $(SCRIPT)
 
-deb:
-	mkdir -p $(package)/usr/local/bin/
-	mkdir -p $(package)/opt/xmrigui/
-	mkdir -p $(package)/usr/share/icons/hicolor/256x256/apps/
-	mkdir -p $(package)/usr/share/applications/
-	mkdir -p $(package)/usr/share/polkit-1/actions/
-	cp xmrigui.py $(package)/usr/local/bin/xmrigui
-	cp xmrig $(package)/opt/xmrigui/
-	cp xmrigui.png $(package)/usr/share/icons/hicolor/256x256/apps/
-	cp xmrigui.desktop $(package)/usr/share/applications/
-	cp xmrigui_as_root.desktop $(package)/usr/share/applications/
-	cp org.freedesktop.policykit.xmrigui.policy $(package)/usr/share/polkit-1/actions/org.freedesktop.policykit.xmrigui.policy
-	dpkg-deb --build --root-owner-group $(package)
-	rm $(package)/usr/local/bin/*
-	rm $(package)/opt/xmrigui/*
-	rm $(package)/usr/share/icons/hicolor/256x256/apps/*
-	rm $(package)/usr/share/applications/xmrigui.desktop
+build-linux:
+	pyinstaller --onefile --windowed --name $(APP_NAME)-v$(VERSION) --icon=$(ICON) $(SCRIPT)
+
+build-windows:
+	# Note: This target is intended to be run in a Windows environment
+	# or a shell with access to a Windows-based PyInstaller.
+	pyinstaller --onefile --windowed --name $(APP_NAME)-v$(VERSION) --icon=$(ICON) $(SCRIPT)
+
+clean:
+	rm -rf build/ dist/ *.spec
+
+deps:
+	pip install PyQt6 pyinstaller
