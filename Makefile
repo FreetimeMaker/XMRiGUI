@@ -1,51 +1,39 @@
-APP_NAME = XMRiGUI
-VERSION = 1.5.0
-MAIN_SCRIPT = xmrigui.py
-ICON = xmrigui.png
-INSTALL_DIR = /opt/$(APP_NAME)
+.PHONY: install uninstall clean deb
 
-.PHONY: all deb build-windows install clean deps
-
-all: deb build-windows
-
-deb:
-	@echo "Building Debian package..."
-	rm -rf build/$(APP_NAME)
-	mkdir -p build/$(APP_NAME)/usr/bin
-	mkdir -p build/$(APP_NAME)$(INSTALL_DIR)
-	mkdir -p build/$(APP_NAME)/DEBIAN
-	# Include everything from the debian folder (metadata like DEBIAN/control and assets)
-	cp -r DEBIAN/* build/$(APP_NAME)/DEBIAN/
-	chmod 755 build/$(APP_NAME)/DEBIAN
-	chmod 644 build/$(APP_NAME)/DEBIAN/control
-	
-	cp $(MAIN_SCRIPT) build/$(APP_NAME)$(INSTALL_DIR)/
-	cp $(ICON) build/$(APP_NAME)$(INSTALL_DIR)/
-	
-	# Create wrapper script
-	echo '#!/bin/bash' > build/$(APP_NAME)/usr/bin/$(APP_NAME)
-	echo 'python3 $(INSTALL_DIR)/$(MAIN_SCRIPT) "$$@"' >> build/$(APP_NAME)/usr/bin/$(APP_NAME)
-	chmod +x build/$(APP_NAME)/usr/bin/$(APP_NAME)
-	
-	dpkg-deb --build build/$(APP_NAME)
-	mv build/$(APP_NAME).deb $(APP_NAME)_$(VERSION)_amd64.deb
-	@echo "Debian package created: $(APP_NAME)_$(VERSION)_amd64.deb"
-
-build-windows:
-	@echo "Building Windows executable..."
-	pyinstaller --onefile --windowed --icon=$(ICON) --name $(APP_NAME) $(MAIN_SCRIPT)
+package = xmrigui_1.5.0_amd64
 
 install:
-	@echo "Installing to $(INSTALL_DIR)..."
-	mkdir -p $(DESTDIR)$(INSTALL_DIR)
-	install -m 644 $(MAIN_SCRIPT) $(DESTDIR)$(INSTALL_DIR)/$(MAIN_SCRIPT)
-	install -m 644 $(ICON) $(DESTDIR)$(INSTALL_DIR)/$(ICON)
-	mkdir -p $(DESTDIR)/usr/bin
-	echo '#!/bin/bash\npython3 $(INSTALL_DIR)/$(MAIN_SCRIPT) "$$@"' > $(DESTDIR)/usr/bin/$(APP_NAME)
-	chmod 755 $(DESTDIR)/usr/bin/$(APP_NAME)
+	cp xmrigui.py /usr/local/bin/xmrigui
+	mkdir -p /opt/xmrigui
+	cp xmrig /opt/xmrigui/
+	mkdir -p /usr/share/icons/hicolor/256x256/apps
+	cp xmrigui.png /usr/share/icons/hicolor/256x256/apps/
+	cp xmrigui.desktop /usr/share/applications/
+	cp xmrigui_as_root.desktop /usr/share/applications/
+	cp org.freedesktop.policykit.xmrigui.policy /usr/share/polkit-1/actions/org.freedesktop.policykit.xmrigui.policy
 
-clean:
-	rm -rf build/ dist/ __pycache__/ *.spec *.deb
+uninstall:
+	rm /usr/local/bin/xmrigui
+	rm -rf /opt/xmrigui
+	rm /usr/share/icons/hicolor/256x256/apps/xmrigui.png
+	rm /usr/share/applications/xmrigui.desktop
+	rm /usr/share/applications/xmrigui_as_root.desktop
+	rm /usr/share/polkit-1/actions/org.freedesktop.policykit.xmrigui.policy
 
-deps:
-	pip install PyQt6 pyinstaller Pillow
+deb:
+	mkdir -p $(package)/usr/local/bin/
+	mkdir -p $(package)/opt/xmrigui/
+	mkdir -p $(package)/usr/share/icons/hicolor/256x256/apps/
+	mkdir -p $(package)/usr/share/applications/
+	mkdir -p $(package)/usr/share/polkit-1/actions/
+	cp xmrigui.py $(package)/usr/local/bin/xmrigui
+	cp xmrig $(package)/opt/xmrigui/
+	cp xmrigui.png $(package)/usr/share/icons/hicolor/256x256/apps/
+	cp xmrigui.desktop $(package)/usr/share/applications/
+	cp xmrigui_as_root.desktop $(package)/usr/share/applications/
+	cp org.freedesktop.policykit.xmrigui.policy $(package)/usr/share/polkit-1/actions/org.freedesktop.policykit.xmrigui.policy
+	dpkg-deb --build --root-owner-group $(package)
+	rm $(package)/usr/local/bin/*
+	rm $(package)/opt/xmrigui/*
+	rm $(package)/usr/share/icons/hicolor/256x256/apps/*
+	rm $(package)/usr/share/applications/xmrigui.desktop
