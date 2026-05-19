@@ -98,7 +98,7 @@ class Window(QMainWindow):
             json.dump(self.config, f, indent=4)
 
     def init_ui(self):
-        self.setWindowTitle('XMRiGUI')
+        self.setWindowTitle('XMRiGUI Version 1.4.0')
         self.setWindowIcon(QIcon(self.icon_path))
         
         central_widget = QWidget()
