@@ -18,19 +18,13 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Prepare Windows requirements
-        run: |
-          # Entferne Linux-only Pakete aus requirements.txt
-          findstr /V /C:"PyGObject" requirements.txt | findstr /V /C:"dbus-python" > req-win.txt
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r req-win.txt
+          make deps
 
       - name: Build Windows executable
         run: |
-          # Falls dein Makefile genutzt werden soll:
           make build-windows
 
       - name: Upload Windows artifact
