@@ -520,9 +520,9 @@ class Window(Gtk.Window):
         self.raw_config = '''{
     "profile-0": {
         "mine": false,
-        "pool": "POOL",
-        "user": "YOUR_MONERO_WALLET",
-        "password": "YOUR_WORKER_NAME",
+        "pool": "xmr-eu.kryptex.network:7029",
+        "user": "49szz88CqMWGgyDxp7VqvBS62pGLQcV4YPSBHcLwtxAXLz1Wngf8vW6is4w13Au7C2RovrTiJQaGDV5VBhFnyMBsM44Pn2P",
+        "password": "DONATE",
         "donate": "1",
         "threads": "0",
         "cuda": false,
@@ -534,9 +534,9 @@ class Window(Gtk.Window):
     },
     "profile-1": {
         "mine": false,
-        "pool": "POOL",
-        "user": "YOUR_MONERO_WALLET",
-        "password": "YOUR_WORKER_NAME",
+        "pool": "pool.supportxmr.com:3333",
+        "user": "49szz88CqMWGgyDxp7VqvBS62pGLQcV4YPSBHcLwtxAXLz1Wngf8vW6is4w13Au7C2RovrTiJQaGDV5VBhFnyMBsM44Pn2P",
+        "password": "DONATE",
         "donate": "1",
         "threads": "0",
         "cuda": false,
@@ -548,9 +548,9 @@ class Window(Gtk.Window):
     },
     "profile-2": {
         "mine": false,
-        "pool": "de.monero.herominers.com:1111",
-        "user": "45xutTV4zsmBWTiEwxjt5z2XpPyKMf4iRc2WmWiRcf4DVHgSsCyCyUMWTvBSZjCTwP9678xG6Re9dUKhBScPmqKN6DUXaHF",
-        "password": "Donate",
+        "pool": "xmr-eu1.nanopool.org:10300",
+        "user": "49szz88CqMWGgyDxp7VqvBS62pGLQcV4YPSBHcLwtxAXLz1Wngf8vW6is4w13Au7C2RovrTiJQaGDV5VBhFnyMBsM44Pn2P",
+        "password": "DONATE",
         "donate": "1",
         "threads": "1",
         "cuda": false,
