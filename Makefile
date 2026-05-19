@@ -46,4 +46,4 @@ clean:
 	rm -rf build/ dist/ __pycache__/ *.spec *.deb
 
 deps:
-	pip install PyQt6 pyinstaller
+	pip install PyQt6 pyinstaller Pillow

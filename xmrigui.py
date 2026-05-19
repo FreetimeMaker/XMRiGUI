@@ -6,8 +6,8 @@ import sys
 import re
 import platform
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-                             QLabel, QLineEdit, QPushButton, QCheckBox, QComboBox, 
-                             QTextEdit, QTabWidget, QGridLayout, QGroupBox, QSystemTrayIcon, QMenu)
+                            QLabel, QLineEdit, QPushButton, QCheckBox, QComboBox, 
+                            QTextEdit, QTabWidget, QGridLayout, QGroupBox, QSystemTrayIcon, QMenu)
 from PyQt6.QtCore import QProcess, Qt, pyqtSlot
 from PyQt6.QtGui import QIcon, QTextCursor, QAction
 
