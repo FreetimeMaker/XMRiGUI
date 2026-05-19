@@ -10,27 +10,20 @@ all: deb build-windows
 
 deb:
 	@echo "Building Debian package..."
-	mkdir -p build/$(APP_NAME)/DEBIAN
+	rm -rf build/$(APP_NAME)
 	mkdir -p build/$(APP_NAME)/usr/bin
 	mkdir -p build/$(APP_NAME)$(INSTALL_DIR)
 	
 	cp $(MAIN_SCRIPT) build/$(APP_NAME)$(INSTALL_DIR)/
 	cp $(ICON) build/$(APP_NAME)$(INSTALL_DIR)/
 	
-	# Create wrapper script for the binary path
+	# Create wrapper script
 	echo '#!/bin/bash' > build/$(APP_NAME)/usr/bin/$(APP_NAME)
 	echo 'python3 $(INSTALL_DIR)/$(MAIN_SCRIPT) "$$@"' >> build/$(APP_NAME)/usr/bin/$(APP_NAME)
 	chmod +x build/$(APP_NAME)/usr/bin/$(APP_NAME)
 	
-	# Generate control file
-	echo "Package: $(APP_NAME)" > build/$(APP_NAME)/DEBIAN/control
-	echo "Version: $(VERSION)" >> build/$(APP_NAME)/DEBIAN/control
-	echo "Section: utils" >> build/$(APP_NAME)/DEBIAN/control
-	echo "Priority: optional" >> build/$(APP_NAME)/DEBIAN/control
-	echo "Architecture: all" >> build/$(APP_NAME)/DEBIAN/control
-	echo "Depends: python3, python3-pyqt6" >> build/$(APP_NAME)/DEBIAN/control
-	echo "Maintainer: Freetime Maker" >> build/$(APP_NAME)/DEBIAN/control
-	echo "Description: A graphical user interface for XMRig crypto miner." >> build/$(APP_NAME)/DEBIAN/control
+	# Include everything from the debian folder (metadata like DEBIAN/control and assets)
+	cp -r debian/* build/$(APP_NAME)/
 	
 	dpkg-deb --build build/$(APP_NAME)
 	mv build/$(APP_NAME).deb $(APP_NAME)_$(VERSION)_all.deb
