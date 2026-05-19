@@ -4,7 +4,7 @@ MAIN_SCRIPT = xmrigui.py
 ICON = xmrigui.png
 INSTALL_DIR = /opt/$(APP_NAME)
 
-.PHONY: all deb build-windows install clean
+.PHONY: all deb build-windows install clean deps
 
 all: deb build-windows
 
@@ -44,3 +44,6 @@ install:
 
 clean:
 	rm -rf build/ dist/ __pycache__/ *.spec *.deb
+
+deps:
+	pip install PyQt6 pyinstaller
