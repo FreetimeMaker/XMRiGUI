@@ -1,5 +1,5 @@
 APP_NAME = XMRiGUI
-VERSION = 1.4.0
+VERSION = 1.5.0
 MAIN_SCRIPT = xmrigui.py
 ICON = xmrigui.png
 INSTALL_DIR = /opt/$(APP_NAME)
@@ -13,6 +13,11 @@ deb:
 	rm -rf build/$(APP_NAME)
 	mkdir -p build/$(APP_NAME)/usr/bin
 	mkdir -p build/$(APP_NAME)$(INSTALL_DIR)
+	mkdir -p build/$(APP_NAME)/DEBIAN
+	# Include everything from the debian folder (metadata like DEBIAN/control and assets)
+	cp -r DEBIAN/* build/$(APP_NAME)/DEBIAN/
+	chmod 755 build/$(APP_NAME)/DEBIAN
+	chmod 644 build/$(APP_NAME)/DEBIAN/control
 	
 	cp $(MAIN_SCRIPT) build/$(APP_NAME)$(INSTALL_DIR)/
 	cp $(ICON) build/$(APP_NAME)$(INSTALL_DIR)/
@@ -22,12 +27,9 @@ deb:
 	echo 'python3 $(INSTALL_DIR)/$(MAIN_SCRIPT) "$$@"' >> build/$(APP_NAME)/usr/bin/$(APP_NAME)
 	chmod +x build/$(APP_NAME)/usr/bin/$(APP_NAME)
 	
-	# Include everything from the debian folder (metadata like DEBIAN/control and assets)
-	cp -r debian/* build/$(APP_NAME)/
-	
 	dpkg-deb --build build/$(APP_NAME)
-	mv build/$(APP_NAME).deb $(APP_NAME)_$(VERSION)_all.deb
-	@echo "Debian package created: $(APP_NAME)_$(VERSION)_all.deb"
+	mv build/$(APP_NAME).deb $(APP_NAME)_$(VERSION)_amd64.deb
+	@echo "Debian package created: $(APP_NAME)_$(VERSION)_amd64.deb"
 
 build-windows:
 	@echo "Building Windows executable..."
