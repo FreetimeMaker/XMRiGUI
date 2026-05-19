@@ -211,35 +211,35 @@ class Window(QMainWindow):
         
         data = process.readAllStandardOutput().data().decode('utf-8', errors='replace')
         for line in data.splitlines():
-        if line:
-            lower_line = line.lower()
-            color = "#ffffff"
-            if "accepted" in lower_line:
-                color = "#2ecc71"
-            elif "error" in lower_line or "rejected" in lower_line or "failed" in lower_line:
-                color = "#e74c3c"
-            elif "net" in lower_line or "pool" in lower_line:
-                color = "#3498db"
-            elif "speed" in lower_line:
-                color = "#f1c40f"
+            if line:
+                lower_line = line.lower()
+                color = "#ffffff"
+                if "accepted" in lower_line:
+                    color = "#2ecc71"
+                elif "error" in lower_line or "rejected" in lower_line or "failed" in lower_line:
+                    color = "#e74c3c"
+                elif "net" in lower_line or "pool" in lower_line:
+                    color = "#3498db"
+                elif "speed" in lower_line:
+                    color = "#f1c40f"
 
-            self.widgets[profile]['log_view'].append(f'<span style="color:{color};">{line}</span>')
-            
-            # Parsen von Speed/Shares
-            speed_match = re.search(r"speed 10s/60s/15m\s+([\d.]+)", line)
-            if speed_match:
-                self.widgets[profile]['last_speed'] = speed_match.group(1)
-            shares_match = re.search(r"accepted\s+\((\d+)/(\d+)\)", line)
-            if shares_match:
-                self.widgets[profile]['last_shares'] = f"{shares_match.group(1)}/{shares_match.group(2)}"
+                self.widgets[profile]['log_view'].append(f'<span style="color:{color};">{line}</span>')
+                
+                # Parsen von Speed/Shares
+                speed_match = re.search(r"speed 10s/60s/15m\s+([\d.]+)", line)
+                if speed_match:
+                    self.widgets[profile]['last_speed'] = speed_match.group(1)
+                shares_match = re.search(r"accepted\s+\((\d+)/(\d+)\)", line)
+                if shares_match:
+                    self.widgets[profile]['last_shares'] = f"{shares_match.group(1)}/{shares_match.group(2)}"
 
-            speed = self.widgets[profile].get('last_speed', '0.0')
-            shares = self.widgets[profile].get('last_shares', '0/0')
-            self.widgets[profile]['info_label'].setText(f"<b>Speed:</b> {speed} H/s | <b>Shares:</b> {shares}")
+                speed = self.widgets[profile].get('last_speed', '0.0')
+                shares = self.widgets[profile].get('last_shares', '0/0')
+                self.widgets[profile]['info_label'].setText(f"<b>Speed:</b> {speed} H/s | <b>Shares:</b> {shares}")
 
-            if "connected to" in lower_line:
-                pool_addr = re.search(r"to\s+([^\s]+)", line)
-                self.widgets[profile]['status_label'].setText(f"Status: Connected to {pool_addr.group(1) if pool_addr else 'Pool'}")
+                if "connected to" in lower_line:
+                    pool_addr = re.search(r"to\s+([^\s]+)", line)
+                    self.widgets[profile]['status_label'].setText(f"Status: Connected to {pool_addr.group(1) if pool_addr else 'Pool'}")
 
     def load_data(self):
         self.profiles = ['profile-0', 'profile-1', 'profile-2']
