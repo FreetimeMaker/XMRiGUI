@@ -1,4 +1,4 @@
-APP_NAME = xmrigui
+APP_NAME = XMRiGUI
 VERSION = 1.4.0
 MAIN_SCRIPT = xmrigui.py
 ICON = xmrigui.png
