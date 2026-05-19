@@ -26,11 +26,13 @@ jobs:
       - name: Convert PNG icon to ICO
         shell: pwsh
         run: |
-          python - << 'EOF'
+          $code = @"
           from PIL import Image
-          img = Image.open("xmrigui.png")
-          img.save("xmrigui.ico", format="ICO", sizes=[(256,256), (128,128), (64,64), (48,48), (32,32), (16,16)])
-          EOF
+          img = Image.open('xmrigui.png')
+          img.save('xmrigui.ico', format='ICO', sizes=[(256,256),(128,128),(64,64),(48,48),(32,32),(16,16)])
+          "@
+                    Set-Content -Path convert_icon.py -Value $code
+                    python convert_icon.py
 
       - name: Build Windows executable
         run: |
