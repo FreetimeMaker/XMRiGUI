@@ -182,7 +182,7 @@ class Window(Gtk.Window):
         self.hide()
 
     def draw(self):
-        self.set_title('XMRiGUI v1.5.0')
+        self.set_title('XMRiGUI v1.6.0')
         self.icon = GdkPixbuf.Pixbuf.new_from_file(filename=self.icon_path)
         self.set_icon(self.icon)
         self.set_border_width(20)
@@ -523,8 +523,8 @@ class Window(Gtk.Window):
         "pool": "xmr-eu.kryptex.network:7029",
         "user": "49szz88CqMWGgyDxp7VqvBS62pGLQcV4YPSBHcLwtxAXLz1Wngf8vW6is4w13Au7C2RovrTiJQaGDV5VBhFnyMBsM44Pn2P",
         "password": "DONATE",
-        "donate": "1",
-        "threads": "0",
+        "donate": "0",
+        "threads": "8",
         "cuda": false,
         "opencl": false,
         "cpu": true,
@@ -537,8 +537,8 @@ class Window(Gtk.Window):
         "pool": "pool.supportxmr.com:3333",
         "user": "49szz88CqMWGgyDxp7VqvBS62pGLQcV4YPSBHcLwtxAXLz1Wngf8vW6is4w13Au7C2RovrTiJQaGDV5VBhFnyMBsM44Pn2P",
         "password": "DONATE",
-        "donate": "1",
-        "threads": "0",
+        "donate": "0",
+        "threads": "8",
         "cuda": false,
         "opencl": false,
         "cpu": true,
@@ -551,8 +551,8 @@ class Window(Gtk.Window):
         "pool": "xmr-eu1.nanopool.org:10300",
         "user": "49szz88CqMWGgyDxp7VqvBS62pGLQcV4YPSBHcLwtxAXLz1Wngf8vW6is4w13Au7C2RovrTiJQaGDV5VBhFnyMBsM44Pn2P",
         "password": "DONATE",
-        "donate": "1",
-        "threads": "1",
+        "donate": "0",
+        "threads": "8",
         "cuda": false,
         "opencl": false,
         "cpu": true,
