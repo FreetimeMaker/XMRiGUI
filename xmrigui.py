@@ -182,7 +182,7 @@ class Window(Gtk.Window):
         self.hide()
 
     def draw(self):
-        self.set_title('XMRiGUI v1.6.0')
+        self.set_title('XMRiGUI v1.6.1')
         self.icon = GdkPixbuf.Pixbuf.new_from_file(filename=self.icon_path)
         self.set_icon(self.icon)
         self.set_border_width(20)
