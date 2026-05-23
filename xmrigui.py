@@ -239,7 +239,7 @@ class Window(Gtk.Window):
         self.hide()
 
     def draw(self):
-        self.set_title('XMRiGUI v1.7.4')
+        self.set_title('XMRiGUI v1.7.5')
         self.icon = GdkPixbuf.Pixbuf.new_from_file(filename=self.icon_path)
         self.set_icon(self.icon)
         self.set_border_width(20)
@@ -393,7 +393,7 @@ class Window(Gtk.Window):
             
             self.widgets[profile]['box'].pack_start(self.widgets[profile]['main_box'], False, False, 10)
             self.widgets[profile]['box'].pack_start(self.widgets[profile]['settings'], False, False, 10)
-            self.widgets[profile]['box'].pack_start(self.widgets[profile]['advanched_settings'], False, False, 10)
+            self.widgets[profile]['box'].pack_start(self.widgets[profile]['advanced_settings'], False, False, 10)
             self.widgets[profile]['box'].pack_start(self.widgets[profile]['log_expander'], True, True, 10)
 
 
@@ -521,7 +521,7 @@ class Window(Gtk.Window):
             self.widgets[profile]['log_buffer'] = buffer
     
     def load_data(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
+        script_dir = os.path.dirname(os.path.realpath(__file__))
         self.user = os.environ.get('USER') or 'user'
         self.settings_path = os.path.expanduser('~/.config/xmrigui.json')
         self.xmrig_path = os.path.join(script_dir, 'xmrig')
