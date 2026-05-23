@@ -1,6 +1,6 @@
 Package: XMRiGUI
 Source: xmrigui
-Version: 1.7.2
+Version: 1.7.3
 Architecture: amd64
 Maintainer: Freetime Maker <jamieachatz@gmail.com>
 Description: GUI for XMRig crypto miner

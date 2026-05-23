@@ -76,16 +76,6 @@ class Window(Gtk.Window):
         self.processes = {}
         self.load_data()
         
-        # Start update checks in background threads
-        xmrig_thread = threading.Thread(target=self.check_and_update_xmrig, daemon=True)
-        xmrig_thread.start()
-        
-        cpuminer_thread = threading.Thread(target=self.check_and_update_cpuminer, daemon=True)
-        cpuminer_thread.start()
-        
-        lolminer_thread = threading.Thread(target=self.check_and_update_lolminer, daemon=True)
-        lolminer_thread.start()
-        
         self._initialize_profile_widgets() # Initialize widgets before config and mining calls
         self.config = self.get_config()
         self.stop_mining(self.profiles[0], restart=False, save=False)
@@ -249,7 +239,7 @@ class Window(Gtk.Window):
         self.hide()
 
     def draw(self):
-        self.set_title('XMRiGUI v1.7.2')
+        self.set_title('XMRiGUI v1.7.3')
         self.icon = GdkPixbuf.Pixbuf.new_from_file(filename=self.icon_path)
         self.set_icon(self.icon)
         self.set_border_width(20)
@@ -906,15 +896,14 @@ class Window(Gtk.Window):
             print(f"[XMRiGUI] Error installing lolMiner: {e}")
     
     def load_data(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
         self.user = os.environ.get('USER') or 'user'
         self.settings_path = os.path.expanduser('~/.config/xmrigui.json')
-        self.xmrig_path = '/opt/xmrigui/xmrig'
-        self.cpuminer_path = '/opt/xmrigui/cpuminer'
-        self.lolminer_path = '/opt/xmrigui/lolminer'
-        self.icon_path = '/usr/share/icons/hicolor/256x256/apps/xmrigui.png'
-        if not os.path.exists(self.icon_path):
-            self.icon_path = 'xmrigui.png' # Fallback auf lokales Icon
-        self.cuda_plugin_path = '/opt/xmrigui/libxmrig-cuda.so'
+        self.xmrig_path = os.path.join(script_dir, 'xmrig')
+        self.cpuminer_path = os.path.join(script_dir, 'minerd')
+        self.lolminer_path = os.path.join(script_dir, 'lolMiner')
+        self.icon_path = os.path.join(script_dir, 'xmrigui.png')
+        self.cuda_plugin_path = os.path.join(script_dir, 'libxmrig-cuda.so')
         self.profiles = ['profile-0', 'profile-1', 'profile-2']
         self.cryptos = [
             'Bitcoin',
