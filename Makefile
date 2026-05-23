@@ -1,6 +1,6 @@
 .PHONY: install uninstall clean deb
 
-package = xmrigui_1.7.2_amd64
+package = xmrigui_1.7.3_amd64
 
 install:
 	mkdir -p /opt/xmrigui
@@ -21,6 +21,8 @@ deb:
 	mkdir -p $(package)/usr/share/applications/
 	cp xmrigui.py $(package)/usr/local/bin/xmrigui
 	chmod +x $(package)/usr/local/bin/xmrigui
+	cp xmrig $(package)/opt/xmrigui/
+	chmod +x $(package)/opt/xmrigui/xmrig
 	cp xmrigui.png $(package)/usr/share/icons/hicolor/256x256/apps/
 	cp xmrigui.desktop $(package)/usr/share/applications/
 	dpkg-deb --build --root-owner-group $(package)
