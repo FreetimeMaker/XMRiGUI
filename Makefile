@@ -1,6 +1,6 @@
 .PHONY: install uninstall clean deb
 
-package = xmrigui_1.7.1_amd64
+package = xmrigui_1.7.2_amd64
 
 install:
 	mkdir -p /opt/xmrigui
