@@ -39,15 +39,15 @@ class DBUSService(dbus.service.Object):
         open_window = False
         for arg in args:
             if arg == 'stop': stop = True
-            if arg == 'start': start = True
+            elif arg == 'start': start = True
             if arg == '--close': close_window = True
-            if arg == '--open': open_window = True
+            elif arg == '--open': open_window = True
         
         if stop:
-            for profile in self.profiles:
+            for profile in self.window.profiles:
                 self.window.widgets[profile]['mine_switch'].set_active(False)
         elif start:
-            for profile in self.profiles:
+            for profile in self.window.profiles:
                 self.window.widgets[profile]['mine_switch'].set_active(True)
         if close_window: self.window.hide()
         elif open_window:
@@ -239,7 +239,7 @@ class Window(Gtk.Window):
         self.hide()
 
     def draw(self):
-        self.set_title('XMRiGUI v1.7.3')
+        self.set_title('XMRiGUI v1.7.4')
         self.icon = GdkPixbuf.Pixbuf.new_from_file(filename=self.icon_path)
         self.set_icon(self.icon)
         self.set_border_width(20)
@@ -329,12 +329,12 @@ class Window(Gtk.Window):
             self.widgets[profile]['settings'].attach(self.widgets[profile]['threads_box'], 1,1,1,1)
             self.widgets[profile]['settings'].attach(self.widgets[profile]['save_button'], 1,2,1,1)
 
-            self.widgets[profile]['advanched_settings'] = Gtk.Expander(label='Advanched options')
-            self.widgets[profile]['advanched_box'] = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-            self.widgets[profile]['advanched_grid'] = Gtk.Grid(column_homogeneous=True, row_spacing=10)
+            self.widgets[profile]['advanced_settings'] = Gtk.Expander(label='Advanced options')
+            self.widgets[profile]['advanced_box'] = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+            self.widgets[profile]['advanced_grid'] = Gtk.Grid(column_homogeneous=True, row_spacing=10)
 
             self.widgets[profile]['cuda_box'] = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-            self.widgets[profile]['cuda_label'] = Gtk.Label(label='NVidia GPU')
+            self.widgets[profile]['cuda_label'] = Gtk.Label(label='NVIDIA GPU')
             self.widgets[profile]['cuda_switch'] = Gtk.Switch()
             self.widgets[profile]['cuda_switch'].set_active(self.config[profile]['cuda'])
             self.widgets[profile]['cuda_switch'].connect('state-set', self.on_save)
@@ -378,18 +378,18 @@ class Window(Gtk.Window):
             self.widgets[profile]['args_box'].pack_start(self.widgets[profile]['args_label'], False, False, 10)
             self.widgets[profile]['args_box'].pack_start(self.widgets[profile]['args_entry'], True, True, 0)
 
-            self.widgets[profile]['advanched_save_button'] = Gtk.Button(label='Save')
-            self.widgets[profile]['advanched_save_button'].connect('clicked', self.on_save)
+            self.widgets[profile]['advanced_save_button'] = Gtk.Button(label='Save')
+            self.widgets[profile]['advanced_save_button'].connect('clicked', self.on_save)
 
-            self.widgets[profile]['advanched_grid'].attach(self.widgets[profile]['cuda_box'], 0,0,1,2)
-            self.widgets[profile]['advanched_grid'].attach(self.widgets[profile]['opencl_box'], 0,2,1,2)
-            self.widgets[profile]['advanched_grid'].attach(self.widgets[profile]['cpu_box'], 0,4,1,2)
-            self.widgets[profile]['advanched_grid'].attach(self.widgets[profile]['crypto_chooser'], 1,0,1,3)
-            self.widgets[profile]['advanched_grid'].attach(self.widgets[profile]['default_args_box'], 1,4,1,2)
-            self.widgets[profile]['advanched_grid'].attach(self.widgets[profile]['args_box'], 0,6,2,1)
-            self.widgets[profile]['advanched_grid'].attach(self.widgets[profile]['advanched_save_button'], 0,7,2,1)
-            self.widgets[profile]['advanched_box'].pack_start(self.widgets[profile]['advanched_grid'], False, False, 10)
-            self.widgets[profile]['advanched_settings'].add(self.widgets[profile]['advanched_box'])
+            self.widgets[profile]['advanced_grid'].attach(self.widgets[profile]['cuda_box'], 0,0,1,2)
+            self.widgets[profile]['advanced_grid'].attach(self.widgets[profile]['opencl_box'], 0,2,1,2)
+            self.widgets[profile]['advanced_grid'].attach(self.widgets[profile]['cpu_box'], 0,4,1,2)
+            self.widgets[profile]['advanced_grid'].attach(self.widgets[profile]['crypto_chooser'], 1,0,1,3)
+            self.widgets[profile]['advanced_grid'].attach(self.widgets[profile]['default_args_box'], 1,4,1,2)
+            self.widgets[profile]['advanced_grid'].attach(self.widgets[profile]['args_box'], 0,6,2,1)
+            self.widgets[profile]['advanced_grid'].attach(self.widgets[profile]['advanced_save_button'], 0,7,2,1)
+            self.widgets[profile]['advanced_box'].pack_start(self.widgets[profile]['advanced_grid'], False, False, 10)
+            self.widgets[profile]['advanced_settings'].add(self.widgets[profile]['advanced_box'])
             
             self.widgets[profile]['box'].pack_start(self.widgets[profile]['main_box'], False, False, 10)
             self.widgets[profile]['box'].pack_start(self.widgets[profile]['settings'], False, False, 10)
@@ -519,381 +519,6 @@ class Window(Gtk.Window):
             buffer.create_tag("warning", foreground="#f1c40f") # Gelb für Speed-Updates
             buffer.create_tag("error", foreground="#e74c3c")   # Rot für Fehler
             self.widgets[profile]['log_buffer'] = buffer
-    
-    def check_and_update_xmrig(self):
-        """Check for new XMRig releases and update if available"""
-        try:
-            print("[XMRiGUI] Checking for XMRig updates...")
-            
-            # Get latest release from GitHub API
-            api_url = 'https://api.github.com/repos/xmrig/xmrig/releases/latest'
-            req = urllib.request.Request(api_url)
-            req.add_header('User-Agent', 'XMRiGUI/1.7.1')
-            
-            with urllib.request.urlopen(req, timeout=10) as response:
-                data = json.loads(response.read().decode())
-            
-            latest_version = data.get('tag_name', '').lstrip('v')
-            
-            # Get current version
-            current_version = self.get_xmrig_version()
-            
-            print(f"[XMRiGUI] Current version: {current_version}, Latest version: {latest_version}")
-            
-            # Compare versions
-            if self.compare_versions(current_version, latest_version) < 0:
-                print(f"[XMRiGUI] Update available! Downloading XMRig {latest_version}...")
-                
-                # Find the Linux x64 release
-                download_url = None
-                for asset in data.get('assets', []):
-                    if 'linux-x64' in asset.get('name', '') and asset.get('name', '').endswith('.tar.gz'):
-                        download_url = asset.get('browser_download_url')
-                        asset_name = asset.get('name', 'xmrig.tar.gz')
-                        break
-                
-                if download_url:
-                    self.download_and_install_xmrig(download_url, asset_name)
-                else:
-                    print("[XMRiGUI] No compatible Linux x64 release found")
-            else:
-                print("[XMRiGUI] XMRig is already up to date")
-                
-        except Exception as e:
-            print(f"[XMRiGUI] Error checking for updates: {e}")
-
-    def get_xmrig_version(self):
-        """Extract current XMRig version"""
-        try:
-            if os.path.exists(self.xmrig_path):
-                result = subprocess.run([self.xmrig_path, '--version'], 
-                                      capture_output=True, text=True, timeout=5)
-                # Parse version from output like "xmrig 6.19.0"
-                match = re.search(r'xmrig\s+([\d.]+)', result.stdout + result.stderr)
-                if match:
-                    return match.group(1)
-            return '0.0.0'
-        except Exception as e:
-            print(f"[XMRiGUI] Error getting XMRig version: {e}")
-            return '0.0.0'
-
-    def compare_versions(self, current, latest):
-        """Compare two version strings. Returns: -1 if current < latest, 0 if equal, 1 if current > latest"""
-        try:
-            def parse_version(v):
-                return tuple(map(int, v.split('.')))
-            
-            current_tuple = parse_version(current)
-            latest_tuple = parse_version(latest)
-            
-            if current_tuple < latest_tuple:
-                return -1
-            elif current_tuple > latest_tuple:
-                return 1
-            else:
-                return 0
-        except:
-            return 0
-
-    def download_and_install_xmrig(self, download_url, asset_name):
-        """Download and install new XMRig version"""
-        try:
-            temp_dir = '/tmp/xmrig_update'
-            os.makedirs(temp_dir, exist_ok=True)
-            
-            tar_path = os.path.join(temp_dir, asset_name)
-            
-            print(f"[XMRiGUI] Downloading from {download_url}...")
-            
-            # Download file
-            req = urllib.request.Request(download_url)
-            req.add_header('User-Agent', 'XMRiGUI/1.7.1')
-            with urllib.request.urlopen(req, timeout=30) as response:
-                with open(tar_path, 'wb') as f:
-                    while True:
-                        chunk = response.read(8192)
-                        if not chunk:
-                            break
-                        f.write(chunk)
-            
-            print(f"[XMRiGUI] Downloaded {asset_name}")
-            
-            # Extract tar.gz
-            print("[XMRiGUI] Extracting archive...")
-            with tarfile.open(tar_path, 'r:gz') as tar:
-                tar.extractall(path=temp_dir)
-            
-            # Find xmrig binary in extracted folder
-            extracted_xmrig = None
-            for root, dirs, files in os.walk(temp_dir):
-                if 'xmrig' in files and root != temp_dir:
-                    extracted_xmrig = os.path.join(root, 'xmrig')
-                    break
-            
-            if not extracted_xmrig:
-                print("[XMRiGUI] Could not find xmrig binary in archive")
-                return
-            
-            # Make it executable
-            os.chmod(extracted_xmrig, 0o755)
-            
-            # Backup old version
-            backup_path = self.xmrig_path + '.backup'
-            if os.path.exists(self.xmrig_path):
-                if os.path.exists(backup_path):
-                    os.remove(backup_path)
-                shutil.move(self.xmrig_path, backup_path)
-                print(f"[XMRiGUI] Backed up old version to {backup_path}")
-            
-            # Install new version
-            shutil.copy2(extracted_xmrig, self.xmrig_path)
-            os.chmod(self.xmrig_path, 0o755)
-            
-            print(f"[XMRiGUI] Successfully updated XMRig to {asset_name}")
-            
-            # Cleanup
-            shutil.rmtree(temp_dir)
-            
-        except Exception as e:
-            print(f"[XMRiGUI] Error installing XMRig: {e}")
-    
-    def check_and_update_cpuminer(self):
-        """Check for new cpuminer releases and update if available"""
-        try:
-            print("[XMRiGUI] Checking for cpuminer updates...")
-            
-            # Get latest release from GitHub API
-            api_url = 'https://api.github.com/repos/pooler/cpuminer/releases/latest'
-            req = urllib.request.Request(api_url)
-            req.add_header('User-Agent', 'XMRiGUI/1.7.1')
-            
-            with urllib.request.urlopen(req, timeout=10) as response:
-                data = json.loads(response.read().decode())
-            
-            latest_version = data.get('tag_name', '').lstrip('v')
-            
-            # Get current version
-            current_version = self.get_cpuminer_version()
-            
-            print(f"[XMRiGUI] cpuminer - Current version: {current_version}, Latest version: {latest_version}")
-            
-            # Compare versions
-            if self.compare_versions(current_version, latest_version) < 0:
-                print(f"[XMRiGUI] cpuminer update available! Downloading {latest_version}...")
-                
-                # Find the Linux x64 release
-                download_url = None
-                for asset in data.get('assets', []):
-                    if 'linux' in asset.get('name', '').lower() and 'x64' in asset.get('name', '').lower() and asset.get('name', '').endswith('.tar.gz'):
-                        download_url = asset.get('browser_download_url')
-                        asset_name = asset.get('name', 'cpuminer.tar.gz')
-                        break
-                
-                if download_url:
-                    self.download_and_install_cpuminer(download_url, asset_name)
-                else:
-                    print("[XMRiGUI] No compatible Linux x64 cpuminer release found")
-            else:
-                print("[XMRiGUI] cpuminer is already up to date")
-                
-        except Exception as e:
-            print(f"[XMRiGUI] Error checking cpuminer updates: {e}")
-
-    def get_cpuminer_version(self):
-        """Extract current cpuminer version"""
-        try:
-            if os.path.exists(self.cpuminer_path):
-                result = subprocess.run([self.cpuminer_path, '--version'], 
-                                      capture_output=True, text=True, timeout=5)
-                # Parse version from output
-                match = re.search(r'([\d.]+)', result.stdout + result.stderr)
-                if match:
-                    return match.group(1)
-            return '0.0.0'
-        except Exception as e:
-            print(f"[XMRiGUI] Error getting cpuminer version: {e}")
-            return '0.0.0'
-
-    def download_and_install_cpuminer(self, download_url, asset_name):
-        """Download and install new cpuminer version"""
-        try:
-            temp_dir = '/tmp/cpuminer_update'
-            os.makedirs(temp_dir, exist_ok=True)
-            
-            tar_path = os.path.join(temp_dir, asset_name)
-            
-            print(f"[XMRiGUI] Downloading cpuminer from {download_url}...")
-            
-            # Download file
-            req = urllib.request.Request(download_url)
-            req.add_header('User-Agent', 'XMRiGUI/1.7.1')
-            with urllib.request.urlopen(req, timeout=30) as response:
-                with open(tar_path, 'wb') as f:
-                    while True:
-                        chunk = response.read(8192)
-                        if not chunk:
-                            break
-                        f.write(chunk)
-            
-            print(f"[XMRiGUI] Downloaded {asset_name}")
-            
-            # Extract tar.gz
-            print("[XMRiGUI] Extracting cpuminer archive...")
-            with tarfile.open(tar_path, 'r:gz') as tar:
-                tar.extractall(path=temp_dir)
-            
-            # Find cpuminer/minerd binary in extracted folder
-            extracted_cpuminer = None
-            for root, dirs, files in os.walk(temp_dir):
-                if 'minerd' in files and root != temp_dir:
-                    extracted_cpuminer = os.path.join(root, 'minerd')
-                    break
-            
-            if not extracted_cpuminer:
-                print("[XMRiGUI] Could not find cpuminer binary in archive")
-                return
-            
-            # Make it executable
-            os.chmod(extracted_cpuminer, 0o755)
-            
-            # Backup old version
-            backup_path = self.cpuminer_path + '.backup'
-            if os.path.exists(self.cpuminer_path):
-                if os.path.exists(backup_path):
-                    os.remove(backup_path)
-                shutil.move(self.cpuminer_path, backup_path)
-                print(f"[XMRiGUI] Backed up old cpuminer to {backup_path}")
-            
-            # Install new version
-            shutil.copy2(extracted_cpuminer, self.cpuminer_path)
-            os.chmod(self.cpuminer_path, 0o755)
-            
-            print(f"[XMRiGUI] Successfully updated cpuminer")
-            
-            # Cleanup
-            shutil.rmtree(temp_dir)
-            
-        except Exception as e:
-            print(f"[XMRiGUI] Error installing cpuminer: {e}")
-    
-    def check_and_update_lolminer(self):
-        """Check for new lolMiner releases and update if available"""
-        try:
-            print("[XMRiGUI] Checking for lolMiner updates...")
-            
-            # Get latest release from GitHub API
-            api_url = 'https://api.github.com/repos/Lolliedieb/lolMiner-releases/releases/latest'
-            req = urllib.request.Request(api_url)
-            req.add_header('User-Agent', 'XMRiGUI/1.7.1')
-            
-            with urllib.request.urlopen(req, timeout=10) as response:
-                data = json.loads(response.read().decode())
-            
-            latest_version = data.get('tag_name', '').lstrip('v')
-            
-            # Get current version
-            current_version = self.get_lolminer_version()
-            
-            print(f"[XMRiGUI] lolMiner - Current version: {current_version}, Latest version: {latest_version}")
-            
-            # Compare versions
-            if self.compare_versions(current_version, latest_version) < 0:
-                print(f"[XMRiGUI] lolMiner update available! Downloading {latest_version}...")
-                
-                # Find the Linux x64 release
-                download_url = None
-                for asset in data.get('assets', []):
-                    if 'lin64' in asset.get('name', '').lower() and asset.get('name', '').endswith('.tar.gz'):
-                        download_url = asset.get('browser_download_url')
-                        asset_name = asset.get('name', 'lolminer.tar.gz')
-                        break
-                
-                if download_url:
-                    self.download_and_install_lolminer(download_url, asset_name)
-                else:
-                    print("[XMRiGUI] No compatible Linux x64 lolMiner release found")
-            else:
-                print("[XMRiGUI] lolMiner is already up to date")
-                
-        except Exception as e:
-            print(f"[XMRiGUI] Error checking lolMiner updates: {e}")
-
-    def get_lolminer_version(self):
-        """Extract current lolMiner version"""
-        try:
-            if os.path.exists(self.lolminer_path):
-                result = subprocess.run([self.lolminer_path, '--version'], 
-                                      capture_output=True, text=True, timeout=5)
-                # Parse version from output
-                match = re.search(r'([\d.]+)', result.stdout + result.stderr)
-                if match:
-                    return match.group(1)
-            return '0.0.0'
-        except Exception as e:
-            print(f"[XMRiGUI] Error getting lolMiner version: {e}")
-            return '0.0.0'
-
-    def download_and_install_lolminer(self, download_url, asset_name):
-        """Download and install new lolMiner version"""
-        try:
-            temp_dir = '/tmp/lolminer_update'
-            os.makedirs(temp_dir, exist_ok=True)
-            
-            tar_path = os.path.join(temp_dir, asset_name)
-            
-            print(f"[XMRiGUI] Downloading lolMiner from {download_url}...")
-            
-            # Download file
-            req = urllib.request.Request(download_url)
-            req.add_header('User-Agent', 'XMRiGUI/1.7.1')
-            with urllib.request.urlopen(req, timeout=30) as response:
-                with open(tar_path, 'wb') as f:
-                    while True:
-                        chunk = response.read(8192)
-                        if not chunk:
-                            break
-                        f.write(chunk)
-            
-            print(f"[XMRiGUI] Downloaded {asset_name}")
-            
-            # Extract tar.gz
-            print("[XMRiGUI] Extracting lolMiner archive...")
-            with tarfile.open(tar_path, 'r:gz') as tar:
-                tar.extractall(path=temp_dir)
-            
-            # Find lolMiner binary in extracted folder
-            extracted_lolminer = None
-            for root, dirs, files in os.walk(temp_dir):
-                if 'lolMiner' in files and root != temp_dir:
-                    extracted_lolminer = os.path.join(root, 'lolMiner')
-                    break
-            
-            if not extracted_lolminer:
-                print("[XMRiGUI] Could not find lolMiner binary in archive")
-                return
-            
-            # Make it executable
-            os.chmod(extracted_lolminer, 0o755)
-            
-            # Backup old version
-            backup_path = self.lolminer_path + '.backup'
-            if os.path.exists(self.lolminer_path):
-                if os.path.exists(backup_path):
-                    os.remove(backup_path)
-                shutil.move(self.lolminer_path, backup_path)
-                print(f"[XMRiGUI] Backed up old lolMiner to {backup_path}")
-            
-            # Install new version
-            shutil.copy2(extracted_lolminer, self.lolminer_path)
-            os.chmod(self.lolminer_path, 0o755)
-            
-            print(f"[XMRiGUI] Successfully updated lolMiner")
-            
-            # Cleanup
-            shutil.rmtree(temp_dir)
-            
-        except Exception as e:
-            print(f"[XMRiGUI] Error installing lolMiner: {e}")
     
     def load_data(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -1056,9 +681,15 @@ def main():
     Gtk.main()
 
 if __name__ == '__main__':
-    p = Process(target=call_instance)
-    p.start()
-    p.join()
-    if p.exitcode > 0:
-        DBusGMainLoop(set_as_default=True)
-        main()
+    try:
+        bus = dbus.SessionBus()
+        if bus.name_has_owner('me.linuxheki.xmrigui'):
+            call_instance()
+            sys.exit(0)
+    except Exception:
+        # Falls D-Bus nicht verfügbar ist oder ein Fehler auftritt, 
+        # versuchen wir die App normal zu starten.
+        pass
+
+    DBusGMainLoop(set_as_default=True)
+    main()
