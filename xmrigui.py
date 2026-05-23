@@ -239,7 +239,7 @@ class Window(Gtk.Window):
         self.hide()
 
     def draw(self):
-        self.set_title('XMRiGUI v1.7.5')
+        self.set_title('XMRiGUI v1.7.6')
         self.icon = GdkPixbuf.Pixbuf.new_from_file(filename=self.icon_path)
         self.set_icon(self.icon)
         self.set_border_width(20)
@@ -681,6 +681,8 @@ def main():
     Gtk.main()
 
 if __name__ == '__main__':
+    # Der Main-Loop MUSS gesetzt werden, BEVOR die erste D-Bus Verbindung aufgebaut wird
+    DBusGMainLoop(set_as_default=True)
     try:
         bus = dbus.SessionBus()
         if bus.name_has_owner('me.linuxheki.xmrigui'):
@@ -691,5 +693,4 @@ if __name__ == '__main__':
         # versuchen wir die App normal zu starten.
         pass
 
-    DBusGMainLoop(set_as_default=True)
     main()

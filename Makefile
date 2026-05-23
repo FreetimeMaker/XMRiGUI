@@ -1,6 +1,6 @@
 .PHONY: install uninstall clean deb
 
-package = xmrigui_1.7.5_amd64
+package = xmrigui_1.7.6_amd64
 
 install:
 	mkdir -p /opt/xmrigui
@@ -28,5 +28,6 @@ deb:
 	cp minerd $(package)/opt/xmrigui/minerd
 	chmod +x $(package)/opt/xmrigui/minerd
 	cp xmrigui.png $(package)/usr/share/icons/hicolor/256x256/apps/
+	cp xmrigui.png $(package)/usr/local/bin/
 	cp xmrigui.desktop $(package)/usr/share/applications/
 	dpkg-deb --build --root-owner-group $(package)
