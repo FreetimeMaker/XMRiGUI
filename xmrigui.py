@@ -239,7 +239,7 @@ class Window(Gtk.Window):
         self.hide()
 
     def draw(self):
-        self.set_title('XMRiGUI v1.7.6')
+        self.set_title('XMRiGUI v1.7.7')
         self.icon = GdkPixbuf.Pixbuf.new_from_file(filename=self.icon_path)
         self.set_icon(self.icon)
         self.set_border_width(20)
@@ -522,6 +522,12 @@ class Window(Gtk.Window):
     
     def load_data(self):
         script_dir = os.path.dirname(os.path.realpath(__file__))
+
+        # Falls die Miner nicht im Skript-Ordner liegen (z.B. bei Start aus /usr/bin), 
+        # nutzen wir den Standard-Installationspfad in /opt/xmrigui
+        if not os.path.exists(os.path.join(script_dir, 'xmrig')) and os.path.exists('/opt/xmrigui'):
+            script_dir = '/opt/xmrigui'
+
         self.user = os.environ.get('USER') or 'user'
         self.settings_path = os.path.expanduser('~/.config/xmrigui.json')
         self.xmrig_path = os.path.join(script_dir, 'xmrig')
