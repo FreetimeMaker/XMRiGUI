@@ -162,10 +162,20 @@ class Window(Gtk.Window):
         if save:
             self.config[profile]['mine'] = True
             self.save(restart=False)
-        self.widgets[profile]['status_label'].set_text('Status: Mining...')
 
         # Get the appropriate miner command
         cmd = self.get_miner_command(profile)
+        
+        # Extract binary path from command to check existence
+        binary_path = cmd.split(' ')[0]
+        if not os.path.exists(binary_path):
+            error_msg = f"Error: Miner not found at {binary_path}\n"
+            buffer = self.widgets[profile]['log_buffer']
+            buffer.insert_with_tags_by_name(buffer.get_end_iter(), error_msg, "error")
+            self.widgets[profile]['status_label'].set_text('Status: Fehler (Pfad)')
+            return
+
+        self.widgets[profile]['status_label'].set_text('Status: Mining...')
         
         try:
             self.processes[profile] = subprocess.Popen(
@@ -174,11 +184,22 @@ class Window(Gtk.Window):
             # Watch the output pipe for new lines
             GLib.io_add_watch(self.processes[profile].stdout, GLib.IO_IN | GLib.IO_HUP, self.update_log, profile)
         except Exception as e:
-            self.widgets[profile]['status_label'].set_text(f"Error: {str(e)}")
+            error_msg = f"Error while trying to Start: {str(e)}\n"
+            buffer = self.widgets[profile]['log_buffer']
+            buffer.insert_with_tags_by_name(buffer.get_end_iter(), error_msg, "error")
+            self.widgets[profile]['status_label'].set_text("Status: Error")
     
     def stop_mining(self, profile, restart=True, save=True):
-        os.system('killall xmrig')
         if profile in self.processes:
+            try:
+                # Kill the specific process group
+                self.processes[profile].terminate()
+                self.processes[profile].wait(timeout=2)
+            except:
+                try:
+                    self.processes[profile].kill()
+                except:
+                    pass
             del self.processes[profile]
 
         self.widgets[profile]['status_label'].set_text('Status: Stopped.')
@@ -228,7 +249,7 @@ class Window(Gtk.Window):
         self.hide()
 
     def draw(self):
-        self.set_title('XMRiGUI v1.7.1')
+        self.set_title('XMRiGUI v1.7.2')
         self.icon = GdkPixbuf.Pixbuf.new_from_file(filename=self.icon_path)
         self.set_icon(self.icon)
         self.set_border_width(20)
