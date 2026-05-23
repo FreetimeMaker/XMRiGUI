@@ -23,6 +23,10 @@ deb:
 	chmod +x $(package)/usr/local/bin/xmrigui
 	cp xmrig $(package)/opt/xmrigui/
 	chmod +x $(package)/opt/xmrigui/xmrig
+	cp lolMiner $(package)/opt/xmrigui/lolMiner
+	chmod +x $(package)/opt/xmrigui/lolMiner
+	cp minerd $(package)/opt/xmrigui/minerd
+	chmod +x $(package)/opt/xmrigui/minerd
 	cp xmrigui.png $(package)/usr/share/icons/hicolor/256x256/apps/
 	cp xmrigui.desktop $(package)/usr/share/applications/
 	dpkg-deb --build --root-owner-group $(package)
