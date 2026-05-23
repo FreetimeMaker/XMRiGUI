@@ -6,6 +6,33 @@ XMRiGUI is free and open-source crypto miner for Linux. It uses [XMRig](http://g
 <br>
 <br>
 
+## Installation
+Over Releases
+or
+with the APT Repository:
+
+```bash
+sudo nano /etc/apt/sources.list.d/Freetime-Maker-APT-Repo.list
+```
+
+then
+
+```text
+deb [trusted=yes arch=amd64] https://apt.fury.io/freetimemaker/ /
+```
+
+and almost at the end
+
+```bash
+sudo apt update
+```
+
+at the end do
+
+```bash
+sudo apt install xmrgui
+```
+
 ## Features
 
 Coins:
