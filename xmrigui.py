@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import gi, os, json, sys, dbus, subprocess, re
+import gi, os, json, sys, dbus, subprocess, re, urllib.request, urllib.error, tarfile, shutil, threading
 import dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
 from multiprocessing import Process
@@ -75,6 +75,17 @@ class Window(Gtk.Window):
         self.widgets = {}
         self.processes = {}
         self.load_data()
+        
+        # Start update checks in background threads
+        xmrig_thread = threading.Thread(target=self.check_and_update_xmrig, daemon=True)
+        xmrig_thread.start()
+        
+        cpuminer_thread = threading.Thread(target=self.check_and_update_cpuminer, daemon=True)
+        cpuminer_thread.start()
+        
+        lolminer_thread = threading.Thread(target=self.check_and_update_lolminer, daemon=True)
+        lolminer_thread.start()
+        
         self._initialize_profile_widgets() # Initialize widgets before config and mining calls
         self.config = self.get_config()
         self.stop_mining(self.profiles[0], restart=False, save=False)
@@ -100,27 +111,62 @@ class Window(Gtk.Window):
             with open(self.settings_path, 'w') as f: f.write(self.raw_config)
             return json.loads(self.raw_config)
 
+    def get_miner_command(self, profile):
+        """Build the correct miner command based on the selected coin"""
+        coin = self.cryptos[self.config[profile]['coin']]
+        pool = self.config[profile]['pool']
+        user = self.config[profile]['user']
+        password = self.config[profile]['password']
+        
+        # Bitcoin - cpuminer
+        if coin == 'Bitcoin':
+            cmd = f"{self.cpuminer_path} -o {pool} -u {user}"
+            if password:
+                cmd += f" -p {password}"
+            return cmd
+        
+        # Litecoin - cpuminer
+        elif coin == 'Litecoin':
+            cmd = f"{self.cpuminer_path} -o {pool} -u {user}"
+            if password:
+                cmd += f" -p {password}"
+            return cmd
+        
+        # Ethereum Classic - lolMiner
+        elif coin == 'Ethereum Classic':
+            cmd = f"{self.lolminer_path} --algo ETCHASH --pool {pool} --user {user}"
+            if password:
+                cmd += f" --pass {password}"
+            return cmd
+        
+        # Default to XMRig for Monero and other XMRig-compatible coins
+        else:
+            args = ''
+            if not self.config[profile]['default_args']:
+                args += f' --algo={self.algos[self.config[profile]["coin"]]}'
+                args += f' --url={pool}'
+                args += f' --user={user}'
+                args += f' --pass={password}'
+                args += f' --donate-level={self.config[profile]["donate"]}'
+                if (self.config[profile]['threads'] != '0') or (not self.config[profile]['threads']): 
+                    args += f' --threads={self.config[profile]["threads"]} --randomx-init={self.config[profile]["threads"]}'
+                if self.config[profile]['cuda']: args += f' --cuda --cuda-loader={self.cuda_plugin_path}'
+                if self.config[profile]['opencl']: args += ' --opencl'
+                if not self.config[profile]['cpu']: args += ' --no-cpu'
+            if self.config[profile]['args']: args += f' {self.config[profile]["args"]}'
+            
+            cmd = f"{self.xmrig_path} --no-color {args}"
+            return cmd
+
     def start_mining(self, profile, save=True):
         if save:
             self.config[profile]['mine'] = True
             self.save(restart=False)
         self.widgets[profile]['status_label'].set_text('Status: Mining...')
 
-        args = ''
-        if not self.config[profile]['default_args']:
-            args += f' --algo={self.algos[self.config[profile]["coin"]]}'
-            args += f' --url={self.config[profile]["pool"]}'
-            args += f' --user={self.config[profile]["user"]}'
-            args += f' --pass={self.config[profile]["password"]}'
-            args += f' --donate-level={self.config[profile]["donate"]}'
-            if (self.config[profile]['threads'] != '0') or (not self.config[profile]['threads']): args += f' --threads={self.config[profile]["threads"]} --randomx-init={self.config[profile]["threads"]}'
-            if self.config[profile]['cuda']: args += f' --cuda --cuda-loader={self.cuda_plugin_path}'
-            if self.config[profile]['opencl']: args += ' --opencl'
-            if not self.config[profile]['cpu']: args += ' --no-cpu'
-        if self.config[profile]['args']: args += f' {self.config[profile]["args"]}'
-
-        # Start XMRig and capture output
-        cmd = f"{self.xmrig_path} --no-color {args}"
+        # Get the appropriate miner command
+        cmd = self.get_miner_command(profile)
+        
         try:
             self.processes[profile] = subprocess.Popen(
                 cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
@@ -182,7 +228,7 @@ class Window(Gtk.Window):
         self.hide()
 
     def draw(self):
-        self.set_title('XMRiGUI v1.6.1')
+        self.set_title('XMRiGUI v1.7.1')
         self.icon = GdkPixbuf.Pixbuf.new_from_file(filename=self.icon_path)
         self.set_icon(self.icon)
         self.set_border_width(20)
@@ -462,16 +508,397 @@ class Window(Gtk.Window):
             buffer.create_tag("warning", foreground="#f1c40f") # Gelb für Speed-Updates
             buffer.create_tag("error", foreground="#e74c3c")   # Rot für Fehler
             self.widgets[profile]['log_buffer'] = buffer
+    
+    def check_and_update_xmrig(self):
+        """Check for new XMRig releases and update if available"""
+        try:
+            print("[XMRiGUI] Checking for XMRig updates...")
+            
+            # Get latest release from GitHub API
+            api_url = 'https://api.github.com/repos/xmrig/xmrig/releases/latest'
+            req = urllib.request.Request(api_url)
+            req.add_header('User-Agent', 'XMRiGUI/1.7.1')
+            
+            with urllib.request.urlopen(req, timeout=10) as response:
+                data = json.loads(response.read().decode())
+            
+            latest_version = data.get('tag_name', '').lstrip('v')
+            
+            # Get current version
+            current_version = self.get_xmrig_version()
+            
+            print(f"[XMRiGUI] Current version: {current_version}, Latest version: {latest_version}")
+            
+            # Compare versions
+            if self.compare_versions(current_version, latest_version) < 0:
+                print(f"[XMRiGUI] Update available! Downloading XMRig {latest_version}...")
+                
+                # Find the Linux x64 release
+                download_url = None
+                for asset in data.get('assets', []):
+                    if 'linux-x64' in asset.get('name', '') and asset.get('name', '').endswith('.tar.gz'):
+                        download_url = asset.get('browser_download_url')
+                        asset_name = asset.get('name', 'xmrig.tar.gz')
+                        break
+                
+                if download_url:
+                    self.download_and_install_xmrig(download_url, asset_name)
+                else:
+                    print("[XMRiGUI] No compatible Linux x64 release found")
+            else:
+                print("[XMRiGUI] XMRig is already up to date")
+                
+        except Exception as e:
+            print(f"[XMRiGUI] Error checking for updates: {e}")
+
+    def get_xmrig_version(self):
+        """Extract current XMRig version"""
+        try:
+            if os.path.exists(self.xmrig_path):
+                result = subprocess.run([self.xmrig_path, '--version'], 
+                                      capture_output=True, text=True, timeout=5)
+                # Parse version from output like "xmrig 6.19.0"
+                match = re.search(r'xmrig\s+([\d.]+)', result.stdout + result.stderr)
+                if match:
+                    return match.group(1)
+            return '0.0.0'
+        except Exception as e:
+            print(f"[XMRiGUI] Error getting XMRig version: {e}")
+            return '0.0.0'
+
+    def compare_versions(self, current, latest):
+        """Compare two version strings. Returns: -1 if current < latest, 0 if equal, 1 if current > latest"""
+        try:
+            def parse_version(v):
+                return tuple(map(int, v.split('.')))
+            
+            current_tuple = parse_version(current)
+            latest_tuple = parse_version(latest)
+            
+            if current_tuple < latest_tuple:
+                return -1
+            elif current_tuple > latest_tuple:
+                return 1
+            else:
+                return 0
+        except:
+            return 0
+
+    def download_and_install_xmrig(self, download_url, asset_name):
+        """Download and install new XMRig version"""
+        try:
+            temp_dir = '/tmp/xmrig_update'
+            os.makedirs(temp_dir, exist_ok=True)
+            
+            tar_path = os.path.join(temp_dir, asset_name)
+            
+            print(f"[XMRiGUI] Downloading from {download_url}...")
+            
+            # Download file
+            req = urllib.request.Request(download_url)
+            req.add_header('User-Agent', 'XMRiGUI/1.7.1')
+            with urllib.request.urlopen(req, timeout=30) as response:
+                with open(tar_path, 'wb') as f:
+                    while True:
+                        chunk = response.read(8192)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+            
+            print(f"[XMRiGUI] Downloaded {asset_name}")
+            
+            # Extract tar.gz
+            print("[XMRiGUI] Extracting archive...")
+            with tarfile.open(tar_path, 'r:gz') as tar:
+                tar.extractall(path=temp_dir)
+            
+            # Find xmrig binary in extracted folder
+            extracted_xmrig = None
+            for root, dirs, files in os.walk(temp_dir):
+                if 'xmrig' in files and root != temp_dir:
+                    extracted_xmrig = os.path.join(root, 'xmrig')
+                    break
+            
+            if not extracted_xmrig:
+                print("[XMRiGUI] Could not find xmrig binary in archive")
+                return
+            
+            # Make it executable
+            os.chmod(extracted_xmrig, 0o755)
+            
+            # Backup old version
+            backup_path = self.xmrig_path + '.backup'
+            if os.path.exists(self.xmrig_path):
+                if os.path.exists(backup_path):
+                    os.remove(backup_path)
+                shutil.move(self.xmrig_path, backup_path)
+                print(f"[XMRiGUI] Backed up old version to {backup_path}")
+            
+            # Install new version
+            shutil.copy2(extracted_xmrig, self.xmrig_path)
+            os.chmod(self.xmrig_path, 0o755)
+            
+            print(f"[XMRiGUI] Successfully updated XMRig to {asset_name}")
+            
+            # Cleanup
+            shutil.rmtree(temp_dir)
+            
+        except Exception as e:
+            print(f"[XMRiGUI] Error installing XMRig: {e}")
+    
+    def check_and_update_cpuminer(self):
+        """Check for new cpuminer releases and update if available"""
+        try:
+            print("[XMRiGUI] Checking for cpuminer updates...")
+            
+            # Get latest release from GitHub API
+            api_url = 'https://api.github.com/repos/pooler/cpuminer/releases/latest'
+            req = urllib.request.Request(api_url)
+            req.add_header('User-Agent', 'XMRiGUI/1.7.1')
+            
+            with urllib.request.urlopen(req, timeout=10) as response:
+                data = json.loads(response.read().decode())
+            
+            latest_version = data.get('tag_name', '').lstrip('v')
+            
+            # Get current version
+            current_version = self.get_cpuminer_version()
+            
+            print(f"[XMRiGUI] cpuminer - Current version: {current_version}, Latest version: {latest_version}")
+            
+            # Compare versions
+            if self.compare_versions(current_version, latest_version) < 0:
+                print(f"[XMRiGUI] cpuminer update available! Downloading {latest_version}...")
+                
+                # Find the Linux x64 release
+                download_url = None
+                for asset in data.get('assets', []):
+                    if 'linux' in asset.get('name', '').lower() and 'x64' in asset.get('name', '').lower() and asset.get('name', '').endswith('.tar.gz'):
+                        download_url = asset.get('browser_download_url')
+                        asset_name = asset.get('name', 'cpuminer.tar.gz')
+                        break
+                
+                if download_url:
+                    self.download_and_install_cpuminer(download_url, asset_name)
+                else:
+                    print("[XMRiGUI] No compatible Linux x64 cpuminer release found")
+            else:
+                print("[XMRiGUI] cpuminer is already up to date")
+                
+        except Exception as e:
+            print(f"[XMRiGUI] Error checking cpuminer updates: {e}")
+
+    def get_cpuminer_version(self):
+        """Extract current cpuminer version"""
+        try:
+            if os.path.exists(self.cpuminer_path):
+                result = subprocess.run([self.cpuminer_path, '--version'], 
+                                      capture_output=True, text=True, timeout=5)
+                # Parse version from output
+                match = re.search(r'([\d.]+)', result.stdout + result.stderr)
+                if match:
+                    return match.group(1)
+            return '0.0.0'
+        except Exception as e:
+            print(f"[XMRiGUI] Error getting cpuminer version: {e}")
+            return '0.0.0'
+
+    def download_and_install_cpuminer(self, download_url, asset_name):
+        """Download and install new cpuminer version"""
+        try:
+            temp_dir = '/tmp/cpuminer_update'
+            os.makedirs(temp_dir, exist_ok=True)
+            
+            tar_path = os.path.join(temp_dir, asset_name)
+            
+            print(f"[XMRiGUI] Downloading cpuminer from {download_url}...")
+            
+            # Download file
+            req = urllib.request.Request(download_url)
+            req.add_header('User-Agent', 'XMRiGUI/1.7.1')
+            with urllib.request.urlopen(req, timeout=30) as response:
+                with open(tar_path, 'wb') as f:
+                    while True:
+                        chunk = response.read(8192)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+            
+            print(f"[XMRiGUI] Downloaded {asset_name}")
+            
+            # Extract tar.gz
+            print("[XMRiGUI] Extracting cpuminer archive...")
+            with tarfile.open(tar_path, 'r:gz') as tar:
+                tar.extractall(path=temp_dir)
+            
+            # Find cpuminer/minerd binary in extracted folder
+            extracted_cpuminer = None
+            for root, dirs, files in os.walk(temp_dir):
+                if 'minerd' in files and root != temp_dir:
+                    extracted_cpuminer = os.path.join(root, 'minerd')
+                    break
+            
+            if not extracted_cpuminer:
+                print("[XMRiGUI] Could not find cpuminer binary in archive")
+                return
+            
+            # Make it executable
+            os.chmod(extracted_cpuminer, 0o755)
+            
+            # Backup old version
+            backup_path = self.cpuminer_path + '.backup'
+            if os.path.exists(self.cpuminer_path):
+                if os.path.exists(backup_path):
+                    os.remove(backup_path)
+                shutil.move(self.cpuminer_path, backup_path)
+                print(f"[XMRiGUI] Backed up old cpuminer to {backup_path}")
+            
+            # Install new version
+            shutil.copy2(extracted_cpuminer, self.cpuminer_path)
+            os.chmod(self.cpuminer_path, 0o755)
+            
+            print(f"[XMRiGUI] Successfully updated cpuminer")
+            
+            # Cleanup
+            shutil.rmtree(temp_dir)
+            
+        except Exception as e:
+            print(f"[XMRiGUI] Error installing cpuminer: {e}")
+    
+    def check_and_update_lolminer(self):
+        """Check for new lolMiner releases and update if available"""
+        try:
+            print("[XMRiGUI] Checking for lolMiner updates...")
+            
+            # Get latest release from GitHub API
+            api_url = 'https://api.github.com/repos/Lolliedieb/lolMiner-releases/releases/latest'
+            req = urllib.request.Request(api_url)
+            req.add_header('User-Agent', 'XMRiGUI/1.7.1')
+            
+            with urllib.request.urlopen(req, timeout=10) as response:
+                data = json.loads(response.read().decode())
+            
+            latest_version = data.get('tag_name', '').lstrip('v')
+            
+            # Get current version
+            current_version = self.get_lolminer_version()
+            
+            print(f"[XMRiGUI] lolMiner - Current version: {current_version}, Latest version: {latest_version}")
+            
+            # Compare versions
+            if self.compare_versions(current_version, latest_version) < 0:
+                print(f"[XMRiGUI] lolMiner update available! Downloading {latest_version}...")
+                
+                # Find the Linux x64 release
+                download_url = None
+                for asset in data.get('assets', []):
+                    if 'lin64' in asset.get('name', '').lower() and asset.get('name', '').endswith('.tar.gz'):
+                        download_url = asset.get('browser_download_url')
+                        asset_name = asset.get('name', 'lolminer.tar.gz')
+                        break
+                
+                if download_url:
+                    self.download_and_install_lolminer(download_url, asset_name)
+                else:
+                    print("[XMRiGUI] No compatible Linux x64 lolMiner release found")
+            else:
+                print("[XMRiGUI] lolMiner is already up to date")
+                
+        except Exception as e:
+            print(f"[XMRiGUI] Error checking lolMiner updates: {e}")
+
+    def get_lolminer_version(self):
+        """Extract current lolMiner version"""
+        try:
+            if os.path.exists(self.lolminer_path):
+                result = subprocess.run([self.lolminer_path, '--version'], 
+                                      capture_output=True, text=True, timeout=5)
+                # Parse version from output
+                match = re.search(r'([\d.]+)', result.stdout + result.stderr)
+                if match:
+                    return match.group(1)
+            return '0.0.0'
+        except Exception as e:
+            print(f"[XMRiGUI] Error getting lolMiner version: {e}")
+            return '0.0.0'
+
+    def download_and_install_lolminer(self, download_url, asset_name):
+        """Download and install new lolMiner version"""
+        try:
+            temp_dir = '/tmp/lolminer_update'
+            os.makedirs(temp_dir, exist_ok=True)
+            
+            tar_path = os.path.join(temp_dir, asset_name)
+            
+            print(f"[XMRiGUI] Downloading lolMiner from {download_url}...")
+            
+            # Download file
+            req = urllib.request.Request(download_url)
+            req.add_header('User-Agent', 'XMRiGUI/1.7.1')
+            with urllib.request.urlopen(req, timeout=30) as response:
+                with open(tar_path, 'wb') as f:
+                    while True:
+                        chunk = response.read(8192)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+            
+            print(f"[XMRiGUI] Downloaded {asset_name}")
+            
+            # Extract tar.gz
+            print("[XMRiGUI] Extracting lolMiner archive...")
+            with tarfile.open(tar_path, 'r:gz') as tar:
+                tar.extractall(path=temp_dir)
+            
+            # Find lolMiner binary in extracted folder
+            extracted_lolminer = None
+            for root, dirs, files in os.walk(temp_dir):
+                if 'lolMiner' in files and root != temp_dir:
+                    extracted_lolminer = os.path.join(root, 'lolMiner')
+                    break
+            
+            if not extracted_lolminer:
+                print("[XMRiGUI] Could not find lolMiner binary in archive")
+                return
+            
+            # Make it executable
+            os.chmod(extracted_lolminer, 0o755)
+            
+            # Backup old version
+            backup_path = self.lolminer_path + '.backup'
+            if os.path.exists(self.lolminer_path):
+                if os.path.exists(backup_path):
+                    os.remove(backup_path)
+                shutil.move(self.lolminer_path, backup_path)
+                print(f"[XMRiGUI] Backed up old lolMiner to {backup_path}")
+            
+            # Install new version
+            shutil.copy2(extracted_lolminer, self.lolminer_path)
+            os.chmod(self.lolminer_path, 0o755)
+            
+            print(f"[XMRiGUI] Successfully updated lolMiner")
+            
+            # Cleanup
+            shutil.rmtree(temp_dir)
+            
+        except Exception as e:
+            print(f"[XMRiGUI] Error installing lolMiner: {e}")
+    
     def load_data(self):
         self.user = os.environ.get('USER') or 'user'
         self.settings_path = os.path.expanduser('~/.config/xmrigui.json')
         self.xmrig_path = '/opt/xmrigui/xmrig'
+        self.cpuminer_path = '/opt/xmrigui/cpuminer'
+        self.lolminer_path = '/opt/xmrigui/lolminer'
         self.icon_path = '/usr/share/icons/hicolor/256x256/apps/xmrigui.png'
         if not os.path.exists(self.icon_path):
             self.icon_path = 'xmrigui.png' # Fallback auf lokales Icon
         self.cuda_plugin_path = '/opt/xmrigui/libxmrig-cuda.so'
         self.profiles = ['profile-0', 'profile-1', 'profile-2']
         self.cryptos = [
+            'Bitcoin',
+            'Litecoin',
+            'Ethereum Classic',
             'Monero',
             'Ravencoin',
             'Uplexa',
@@ -495,6 +922,9 @@ class Window(Gtk.Window):
             'Stellite'
         ]
         self.algos = [
+            'sha256d',
+            'scrypt',
+            'etchash',
             'rx/0',
             'kawpow',
             'cn/upx2',
@@ -520,43 +950,43 @@ class Window(Gtk.Window):
         self.raw_config = '''{
     "profile-0": {
         "mine": false,
-        "pool": "xmr-eu.kryptex.network:7029",
-        "user": "49szz88CqMWGgyDxp7VqvBS62pGLQcV4YPSBHcLwtxAXLz1Wngf8vW6is4w13Au7C2RovrTiJQaGDV5VBhFnyMBsM44Pn2P",
-        "password": "DONATE",
+        "pool": "stratum+tcp://pool.supportxmr.com:3333",
+        "user": "YOUR_BITCOIN_WALLET",
+        "password": "",
         "donate": "0",
         "threads": "8",
         "cuda": false,
         "opencl": false,
         "cpu": true,
-        "coin": 0,
+        "coin": 3,
         "args": "",
         "default_args": false
     },
     "profile-1": {
         "mine": false,
-        "pool": "pool.supportxmr.com:3333",
-        "user": "49szz88CqMWGgyDxp7VqvBS62pGLQcV4YPSBHcLwtxAXLz1Wngf8vW6is4w13Au7C2RovrTiJQaGDV5VBhFnyMBsM44Pn2P",
-        "password": "DONATE",
+        "pool": "stratum+tcp://pool.supportxmr.com:3333",
+        "user": "YOUR_LITECOIN_WALLET",
+        "password": "",
         "donate": "0",
         "threads": "8",
         "cuda": false,
         "opencl": false,
         "cpu": true,
-        "coin": 0,
+        "coin": 3,
         "args": "",
         "default_args": false
     },
     "profile-2": {
         "mine": false,
-        "pool": "xmr-eu1.nanopool.org:10300",
-        "user": "49szz88CqMWGgyDxp7VqvBS62pGLQcV4YPSBHcLwtxAXLz1Wngf8vW6is4w13Au7C2RovrTiJQaGDV5VBhFnyMBsM44Pn2P",
-        "password": "DONATE",
+        "pool": "stratum+tcp://etc-eu1.nanopool.org:19444",
+        "user": "YOUR_ETC_WALLET",
+        "password": "",
         "donate": "0",
         "threads": "8",
         "cuda": false,
         "opencl": false,
         "cpu": true,
-        "coin": 0,
+        "coin": 3,
         "args": "",
         "default_args": false
     }
