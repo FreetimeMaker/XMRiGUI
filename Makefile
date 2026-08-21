@@ -6,7 +6,7 @@ install:
 	mkdir -p /opt/xmrigui
 	mkdir -p /usr/share/icons/hicolor/256x256/apps
 	cp xmrigui.png /usr/share/icons/hicolor/256x256/apps/
-	cp xmrigui.desktop /usr/share/applications/
+	cp /linux/xmrigui.desktop /usr/share/applications/
 
 uninstall:
 	rm /usr/local/bin/xmrigui
