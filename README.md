@@ -80,7 +80,11 @@ sudo dnf install xmrigui
 ### 1. Create the Executable
 To create a single `.exe` file that contains everything:
 1. Install Python 3.
-2. Install build tools: `pip install pyinstaller pygobject requests`
+2. Install build tools:
+   ```bash
+   pip install -r requirements.txt
+   pip install pyinstaller
+   ```
 3. Run: `python build_windows.py`
    The result will be in `dist/XMRiGUI.exe`.
 

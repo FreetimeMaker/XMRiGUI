@@ -4,6 +4,15 @@ import gi, os, json, sys, subprocess, re, threading
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GdkPixbuf, GLib, Gdk
 
+# Windows taskbar icon fix
+if sys.platform == "win32":
+    import ctypes
+    try:
+        myappid = 'freetimemaker.xmrigui.1.7.7' # arbitrary string
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+    except:
+        pass
+
 APP_VERSION = "v1.7.7"
 
 class Window(Gtk.Window):
@@ -17,6 +26,8 @@ class Window(Gtk.Window):
         self.config = self.get_config()
 
         # UI Setup
+        self.set_resizable(False)
+        self.apply_theme()
         self.draw()
         self.connect('destroy', Gtk.main_quit)
 
@@ -28,11 +39,16 @@ class Window(Gtk.Window):
         self.show_all()
 
     def load_data(self):
-        script_dir = os.path.dirname(os.path.realpath(__file__))
+        # Handle PyInstaller path
+        if getattr(sys, 'frozen', False):
+            script_dir = sys._MEIPASS
+        else:
+            script_dir = os.path.dirname(os.path.realpath(__file__))
 
-        # Original v1.7.7 Linux logic + Windows portability
+        # Linux / Windows differentiation for paths
         if sys.platform == "win32":
             self.settings_path = os.path.join(os.getenv('APPDATA'), 'XMRiGUI', 'xmrigui.json')
+            os.makedirs(os.path.dirname(self.settings_path), exist_ok=True)
             self.xmrig_path = os.path.join(script_dir, 'xmrig.exe')
             self.cpuminer_path = os.path.join(script_dir, 'minerd.exe')
             self.lolminer_path = os.path.join(script_dir, 'lolMiner.exe')
@@ -48,16 +64,19 @@ class Window(Gtk.Window):
 
         self.user = os.environ.get('USER') or os.environ.get('USERNAME') or 'user'
         self.icon_path = os.path.join(script_dir, 'xmrigui.png')
+        # If not found, check current working directory
+        if not os.path.exists(self.icon_path):
+            self.icon_path = os.path.join(os.getcwd(), 'xmrigui.png')
 
         self.profiles = ['profile-0', 'profile-1', 'profile-2']
         self.cryptos = [
-            'Bitcoin', 'Litecoin', 'Ethereum Classic', 'Monero', 'Ravencoin', 'Uplexa',
+            'Monero', 'Ravencoin', 'Uplexa',
             'Chukwa', 'Chukwa v2', 'CCX', 'Keva', 'Dero', 'Talleo', 'Safex', 'ArQmA',
             'NINJA', 'Raptoreum', 'Wownero', 'Scala', 'Haven Protocol', 'MoneroV',
             'Epic Cash', 'Graft', 'Oxen', 'Stellite'
         ]
         self.algos = [
-            'sha256d', 'scrypt', 'etchash', 'rx/0', 'kawpow', 'cn/upx2',
+            'rx/0', 'kawpow', 'cn/upx2',
             'argon2/chukwa', 'argon2/chukwav2', 'cn/ccx', 'rx/keva', 'astrobwt',
             'cn-pico/tlo', 'rx/sfx', 'rx/arq', 'argon2/ninja', 'gr', 'rx/wow',
             'panthera', 'cn-heavy/xhv', 'rx/v', 'rx/epic', 'rx/graft', 'rx/loki', 'rx/xtl'
@@ -65,43 +84,43 @@ class Window(Gtk.Window):
         self.raw_config = '''{
     "profile-0": {
         "mine": false,
-        "pool": "stratum+tcp://pool.supportxmr.com:3333",
-        "user": "YOUR_BITCOIN_WALLET",
-        "password": "",
+        "pool": "pool.supportxmr.com:3333",
+        "user": "49szz88CqMWGgyDxp7VqvBS62pGLQcV4YPSBHcLwtxAXLz1Wngf8vW6is4w13Au7C2RovrTiJQaGDV5VBhFnyMBsM44Pn2P",
+        "password": "Donate",
         "donate": "0",
         "threads": "8",
         "cuda": false,
         "opencl": false,
         "cpu": true,
-        "coin": 3,
+        "coin": 0,
         "args": "",
         "default_args": false
     },
     "profile-1": {
         "mine": false,
-        "pool": "stratum+tcp://pool.supportxmr.com:3333",
-        "user": "YOUR_LITECOIN_WALLET",
-        "password": "",
+        "pool": "xmr-eu.kryptex.network:7029",
+        "user": "49szz88CqMWGgyDxp7VqvBS62pGLQcV4YPSBHcLwtxAXLz1Wngf8vW6is4w13Au7C2RovrTiJQaGDV5VBhFnyMBsM44Pn2P",
+        "password": "Donate",
         "donate": "0",
         "threads": "8",
         "cuda": false,
         "opencl": false,
         "cpu": true,
-        "coin": 3,
+        "coin": 0,
         "args": "",
         "default_args": false
     },
     "profile-2": {
         "mine": false,
-        "pool": "stratum+tcp://etc-eu1.nanopool.org:19444",
-        "user": "YOUR_ETC_WALLET",
-        "password": "",
+        "pool": "etc-eu1.nanopool.org:19444",
+        "user": "49szz88CqMWGgyDxp7VqvBS62pGLQcV4YPSBHcLwtxAXLz1Wngf8vW6is4w13Au7C2RovrTiJQaGDV5VBhFnyMBsM44Pn2P",
+        "password": "Donate",
         "donate": "0",
         "threads": "8",
         "cuda": false,
         "opencl": false,
         "cpu": true,
-        "coin": 3,
+        "coin": 0,
         "args": "",
         "default_args": false
     }
@@ -109,23 +128,80 @@ class Window(Gtk.Window):
 '''
 
     def get_config(self):
+        default_config = json.loads(self.raw_config)
         try:
             if os.path.exists(self.settings_path):
                 with open(self.settings_path, 'r') as f:
-                    config = json.loads(f.read())
-                    test = config[self.profiles[2]]
+                    config = json.load(f)
+                    # Ensure all profiles and keys exist by merging with default
+                    for p in self.profiles:
+                        if p not in config:
+                            config[p] = default_config[p]
+                        else:
+                            for key, value in default_config[p].items():
+                                if key not in config[p]:
+                                    config[p][key] = value
                     return config
-            else:
-                os.makedirs(os.path.dirname(self.settings_path), exist_ok=True)
-                with open(self.settings_path, 'w') as f: f.write(self.raw_config)
-                return json.loads(self.raw_config)
-        except:
-            with open(self.settings_path, 'w') as f: f.write(self.raw_config)
-            return json.loads(self.raw_config)
+        except Exception as e:
+            print(f"Config error, using defaults: {e}")
+
+        # Fallback to default if file doesn't exist or is broken
+        os.makedirs(os.path.dirname(self.settings_path), exist_ok=True)
+        with open(self.settings_path, 'w') as f:
+            f.write(self.raw_config)
+        return default_config
+
+    def apply_theme(self):
+        settings = Gtk.Settings.get_default()
+        settings.set_property("gtk-application-prefer-dark-theme", True)
+        css_provider = Gtk.CssProvider()
+        css = b"""
+            window { background-color: #1e1e1e; color: #ffffff; }
+            entry, combobox { background-color: #2d2d2d; color: white; border: 1px solid #3d3d3d; padding: 5px; border-radius: 4px; }
+            frame { border: 1px solid #3d3d3d; border-radius: 8px; padding: 15px; background-color: #252525; margin: 10px; }
+            textview { font-family: 'Consolas', monospace; background-color: #000000; color: #00ff00; }
+            button { background-color: #3d3d3d; color: white; border-radius: 4px; padding: 8px; border: none; }
+            button:hover { background-color: #4d4d4d; }
+            label { color: #eeeeee; }
+
+            /* Modern Switch Styling */
+            switch {
+                border-radius: 20px;
+                outline-width: 0;
+            }
+            switch trough {
+                border-radius: 20px;
+                background-color: #3d3d3d;
+                border: 1px solid #4d4d4d;
+                min-width: 50px;
+                min-height: 24px;
+            }
+            switch trough:checked {
+                background-color: #2ecc71;
+                border: 1px solid #27ae60;
+            }
+            switch slider {
+                background-color: #ffffff;
+                border-radius: 20px;
+                min-width: 20px;
+                min-height: 20px;
+                margin: 2px;
+            }
+        """
+        css_provider.load_from_data(css)
+        Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
     def draw(self):
         self.set_title(f'XMRiGUI {APP_VERSION}')
+
+        # Taskbar Fixes
+        if sys.platform != "win32":
+            # Linux: WM_CLASS must match the .desktop file name
+            self.set_wmclass("xmrigui", "XMRiGUI")
+            self.set_role("xmrigui")
+
         if os.path.exists(self.icon_path):
+            Gtk.Window.set_default_icon_from_file(self.icon_path)
             self.set_icon_from_file(self.icon_path)
 
         self.set_border_width(20)
@@ -149,7 +225,7 @@ class Window(Gtk.Window):
             self.widgets[profile]['mine_label'].set_markup('<big>Mine</big>')
 
             self.widgets[profile]['mine_switch'] = Gtk.Switch()
-            self.widgets[profile]['mine_switch'].set_active(self.config[profile]['mine'])
+            self.widgets[profile]['mine_switch'].set_active(self.config[profile].get('mine', False))
             self.widgets[profile]['mine_switch'].connect('state-set', self.on_mine_switch, profile)
             self.widgets[profile]['mine_switch'].props.valign = Gtk.Align.CENTER
 

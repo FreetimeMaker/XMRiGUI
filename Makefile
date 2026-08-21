@@ -1,6 +1,6 @@
 .PHONY: install uninstall deb rpm
 
-package = xmrigui_1.8.0_amd64
+package = linux/xmrigui_1.8.0_amd64
 
 install:
 	mkdir -p /opt/xmrigui
