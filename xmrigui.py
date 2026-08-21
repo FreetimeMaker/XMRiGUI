@@ -8,7 +8,7 @@ from gi.repository import Gtk, GdkPixbuf, GLib, Gdk
 if sys.platform == "win32":
     import ctypes
     try:
-        myappid = 'freetimemaker.xmrigui.1.1.0' # arbitrary string
+        myappid = 'freetimemaker.xmrigui.1.8.1' # arbitrary string
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
     except:
         pass
@@ -42,34 +42,46 @@ class Window(Gtk.Window):
         # Handle PyInstaller path
         if getattr(sys, 'frozen', False):
             script_dir = sys._MEIPASS
+            bin_base = os.path.dirname(sys.executable)
         else:
             script_dir = os.path.dirname(os.path.realpath(__file__))
+            bin_base = script_dir
 
         # Linux / Windows differentiation for paths
         if sys.platform == "win32":
             self.settings_path = os.path.join(os.getenv('APPDATA'), 'XMRiGUI', 'xmrigui.json')
             os.makedirs(os.path.dirname(self.settings_path), exist_ok=True)
-            # Look in app dir, then in "windows" subfolder (for development)
-            self.xmrig_path = os.path.join(script_dir, 'xmrig.exe')
-            if not os.path.exists(self.xmrig_path):
-                self.xmrig_path = os.path.join(script_dir, 'windows', 'xmrig.exe')
 
-            self.cpuminer_path = os.path.join(script_dir, 'minerd.exe')
-            if not os.path.exists(self.cpuminer_path):
-                self.cpuminer_path = os.path.join(script_dir, 'windows', 'minerd.exe')
+            # List of possible miner locations
+            miner_candidates = [
+                os.path.join(bin_base, 'xmrig.exe'),
+                os.path.join(bin_base, 'windows', 'xmrig.exe'),
+                os.path.join(bin_base, '..', 'windows', 'xmrig.exe'),
+                'xmrig.exe' # Check PATH
+            ]
 
-            self.lolminer_path = os.path.join(script_dir, 'lolMiner.exe')
-            if not os.path.exists(self.lolminer_path):
-                self.lolminer_path = os.path.join(script_dir, 'windows', 'lolMiner.exe')
+            self.xmrig_path = miner_candidates[0] # Default
+            for candidate in miner_candidates:
+                if os.path.exists(candidate):
+                    self.xmrig_path = os.path.abspath(candidate)
+                    break
 
-            self.cuda_plugin_path = os.path.join(script_dir, 'libxmrig-cuda.dll')
+            # CUDA Plugin candidates
+            cuda_candidates = [
+                os.path.join(bin_base, 'libxmrig-cuda.dll'),
+                os.path.join(bin_base, 'windows', 'libxmrig-cuda.dll'),
+                os.path.join(bin_base, '..', 'windows', 'libxmrig-cuda.dll')
+            ]
+            self.cuda_plugin_path = cuda_candidates[0]
+            for candidate in cuda_candidates:
+                if os.path.exists(candidate):
+                    self.cuda_plugin_path = os.path.abspath(candidate)
+                    break
         else:
             if not os.path.exists(os.path.join(script_dir, 'xmrig')) and os.path.exists('/opt/xmrigui'):
                 script_dir = '/opt/xmrigui'
             self.settings_path = os.path.expanduser('~/.config/xmrigui.json')
             self.xmrig_path = os.path.join(script_dir, 'xmrig')
-            self.cpuminer_path = os.path.join(script_dir, 'minerd')
-            self.lolminer_path = os.path.join(script_dir, 'lolMiner')
             self.cuda_plugin_path = os.path.join(script_dir, 'libxmrig-cuda.so')
 
         self.user = os.environ.get('USER') or os.environ.get('USERNAME') or 'user'
@@ -337,8 +349,18 @@ class Window(Gtk.Window):
             self.save()
 
         cmd = self.get_miner_command(profile)
-        binary = cmd.split(' ')[0].replace('"', '')
-        if not os.path.exists(binary):
+
+        # Robustly find binary path even with quotes and spaces
+        if sys.platform == "win32":
+            # Extract binary from something like "C:\path to\xmrig.exe" --args
+            if cmd.startswith('"'):
+                binary = cmd[1:cmd.find('"', 1)]
+            else:
+                binary = cmd.split(' ')[0]
+        else:
+            binary = cmd.split(' ')[0]
+
+        if not os.path.exists(binary) and not shutil.which(binary):
             self.log(profile, f"Error: Miner not found at {binary}", "error")
             self.widgets[profile]['mine_switch'].set_active(False)
             return
@@ -375,8 +397,8 @@ class Window(Gtk.Window):
 
     def get_miner_command(self, profile):
         c = self.config[profile]
-        coin = self.cryptos[c['coin']]
         pool = c['pool']; user = c['user']; password = c.get('password', '')
+
         binary = self.xmrig_path
         args = '--no-color'
         if not c.get('default_args', False):

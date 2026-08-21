@@ -6,7 +6,7 @@
 [Setup]
 AppId={{D3F7B29E-8A5E-4B9B-B8A1-D9F5E67C9242}}
 AppName=XMRiGUI
-AppVersion=1.8.0
+AppVersion=1.8.1
 AppPublisher=Freetime Maker
 AppPublisherURL=https://github.com/FreetimeMaker/XMRiGUI
 AppSupportURL=https://github.com/FreetimeMaker/XMRiGUI/issues
