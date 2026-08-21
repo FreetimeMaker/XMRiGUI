@@ -373,6 +373,27 @@ class Window(Gtk.Window):
             })
         with open(self.settings_path, 'w') as f: json.dump(self.config, f, indent=4)
 
+    def get_miner_command(self, profile):
+        c = self.config[profile]
+        coin = self.cryptos[c['coin']]
+        pool = c['pool']; user = c['user']; password = c.get('password', '')
+        binary = self.xmrig_path
+        args = '--no-color'
+        if not c.get('default_args', False):
+            args += f' --algo={self.algos[c["coin"]]} --url={pool} --user={user} --pass={password if password else "x"}'
+            args += f' --donate-level={c.get("donate", "1")}'
+            if c.get('threads', '0') != '0': args += f' --threads={c["threads"]} --randomx-init={c["threads"]}'
+            if c.get('cuda', False): args += f' --cuda --cuda-loader="{self.cuda_plugin_path}"'
+            if c.get('opencl', False): args += ' --opencl'
+            if not c.get('cpu', True): args += ' --no-cpu'
+
+        if c.get('args'): args += f' {c["args"]}'
+
+        # On Windows, wrap the binary in quotes if it contains spaces
+        if sys.platform == "win32":
+            return f'"{binary}" {args}'
+        return f'{binary} {args}'
+
     def update_log(self, source, condition, profile):
         if condition & GLib.IO_HUP: return False
         line = source.readline().decode('utf-8', errors='replace')
