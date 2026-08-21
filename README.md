@@ -1,121 +1,76 @@
 # XMRiGUI
 
-XMRiGUI is free and open-source crypto miner for Linux. It uses [XMRig](http://github.com/xmrig/xmrig) for mining and GTK3 for GUI.
+XMRiGUI is a free and open-source crypto miner for Windows and Linux. It provides a modern, high-performance GUI for [XMRig](https://github.com/xmrig/xmrig) and other popular miners.
+
+Built with **C++ 17**, **Qt6**, and the latest **CMake 4.3** standard.
 
 ![Preview of XMRiGUI](preview.png)
-<br>
-<br>
-
-## Installation
-Over Releases
-or
-with the APT Repository:
-
-```bash
-sudo nano /etc/apt/sources.list.d/Freetime-Maker-APT-Repo.list
-```
-
-then
-
-```text
-deb [trusted=yes arch=amd64] https://apt.fury.io/freetimemaker/ /
-```
-
-and almost at the end
-
-```bash
-sudo apt update
-```
-
-at the end do
-
-```bash
-sudo apt install xmrgui
-```
 
 ## Features
 
-Coins:
-* Monero
-* Ravencoin
-* Uplexa
-* Chukwa
-* Chukwa v2
-* CCX
-* Keva
-* Dero
-* Talleo
-* Safex
-* ArQmA
-* NINJA
-* Raptoreum
+### Supported Miners
+*   **XMRig**: For Monero, Ravencoin, and most CPU-based coins.
+*   **CPUMiner-Multi**: Automatically used for Bitcoin and Litecoin.
+*   **lolMiner**: Automatically used for Ethereum Classic.
 
-Other cryptos **may** work if the algorithm is the same.
+### Key Capabilities
+*   **Multi-Profile Support**: Manage up to 3 different mining configurations simultaneously.
+*   **Intelligent Auto-Switching**: Automatically selects the best miner binary based on the selected coin.
+*   **Real-time Stats**: Live tracking of Hashrate (H/s) and Shares (Accepted/Rejected).
+*   **System Tray Integration**: Run the miner in the background with quick-access controls.
+*   **Cross-Platform**: Native look and feel on both Windows and Linux.
+*   **Auto-Updates**: Checks for new versions of XMRiGUI and XMRig binaries automatically.
 
-Mining backends:
-* **CPU**
-* **OpenCL** for AMD GPUs
-* **CUDA** for NVIDIA GPUs
-<br>
-<br>
+### Supported Coins & Algorithms
+*   **Monero** (RandomX)
+*   **Bitcoin** (SHA-256)
+*   **Litecoin** (Scrypt)
+*   **Ethereum Classic** (Etchash)
+*   **Ravencoin** (KawPow)
+*   ...and 20+ other algorithms (Ghostrider, Argon2, AstroBWT, etc.)
 
-If you want this to work on arm processor like on Raspberry Pi, you need to build [XMRig](https://github.com/xmrig/xmrig) yourself, do [Custom XMRig](https://github.com/FreetimeMaker/XMRiGUI#custom-xmrig) and then [build this](https://github.com/FreetimeMaker/XMRiGUI#build-from-source).
+## Installation
 
-If OpenCL doesn't work try to install [this driver](https://github.com/Diolinux/amd-opencl-pro-linux-resolve).
+### Windows
+1. Download the latest `XMRiGUI-Windows.zip` from the [Releases](https://github.com/FreetimeMaker/XMRiGUI/releases) page.
+2. Extract the files and run `XMRiGUI.exe`.
 
-For CUDA to work you need to build [Cuda plugin](http://github.com/xmrig/xmrig-cuda#linux-usage) and put it into `/opt/xmrigui/`
+### Linux
+1. Download the `XMRiGUI-Linux.tar.gz`.
+2. Ensure you have Qt6 libraries installed:
+   ```bash
+   sudo apt install qt6-base-dev
+   ```
+3. Run the binary: `./XMRiGUI`
 
-**I NEVER TESTED OPENCL OR CUDA BECAUSE I DON'T HAVE THAT GOOD GPU! PLEASE TEST AND IF SOMETHING GOES WRONG PLEASE REPORT!**
-<br>
-<br>
+## Build from Source
 
-Command line options:
-* `start` for start mining
-* `stop` for stop mining
-* `--close` for close window
-* `--open` for open window
-<br>
-<br>
+### Requirements
+*   **CMake 4.3+**
+*   **Qt 6.6+** (with Widgets and Network modules)
+*   C++ 17 compatible compiler (MSVC on Windows, GCC/Clang on Linux)
 
-## Build from source
+### Compilation
+```bash
+mkdir build && cd build
+cmake ..
+cmake --build .
+```
 
-If you want to build XMRiGUI from source, you'll need to have:
-* python3
-* gtk3
-* pyinstaller
-* pygobject
-* gir1.2-ayatanaappindicator3-0.1
-<br>
-<br>
-
-Build:
-
-`sudo make install`
-
-or if you want deb package:
-
-`make deb`
-<br>
-<br>
-
-## Custom XMRig
-
-If you want to use custom version of XMRig you need to replace `xmrig` with the new one and than reinstall XMRiGUI or replace `/opt/xmrigui/xmrig` and restart the app.
-<br>
-<br>
+## Command Line Options
+*   `start`: Start mining all active profiles immediately.
+*   `stop`: Stop all active mining processes.
+*   `--open`: Open the main window.
+*   `--close`: Hide to system tray.
 
 ## Contribute
 
-### Logo
+### Support the Project
+If you find this tool useful, consider supporting development:
+*   **Monero (XMR)**: `49szz88CqMWGgyDxp7VqvBS62pGLQcV4YPSBHcLwtxAXLz1Wngf8vW6is4w13Au7C2RovrTiJQaGDV5VBhFnyMBsM44Pn2P`
 
-If you are good at making logos, please make simple, monero like logo for XMRiGUI!
+### Development
+Pull requests and bug reports are welcome on [GitHub](https://github.com/FreetimeMaker/XMRiGUI).
 
-### Features
-
-If you want new feature, please contact me and I will probably added it!
-
-### Donate
-
-If you want to support me, please mine for some hours with my wallet and don't forget to set custom password ; ). Thank you!
-<br>
-Monero address: `49szz88CqMWGgyDxp7VqvBS62pGLQcV4YPSBHcLwtxAXLz1Wngf8vW6is4w13Au7C2RovrTiJQaGDV5VBhFnyMBsM44Pn2P`
+---
+**Disclaimer**: Mining can be intensive for your hardware. Ensure proper cooling. Use at your own risk.

@@ -1,6 +1,3 @@
-__pycache__
-build
-dist
-xmrigui.spec
-*.deb
 .idea
+.vs
+out
