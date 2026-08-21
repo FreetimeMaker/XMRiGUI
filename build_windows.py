@@ -20,6 +20,7 @@ def build():
         "--windowed",
         "--add-data", "xmrigui.png;.",
         "--collect-all", "gi",
+        "--icon", os.path.join("windows", "xmrigui.ico"),
         "--name", "XMRiGUI",
         "xmrigui.py"
     ]

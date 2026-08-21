@@ -31,17 +31,14 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "dist\XMRiGUI.exe"; DestDir: "{app}"; Flags: ignoreversion
-; Include assets if needed
+; Include assets
 Source: "xmrigui.png"; DestDir: "{app}"; Flags: ignoreversion
-; Note: If you want to bundle miners, add them here:
-; Source: "xmrig.exe"; DestDir: "{app}"; Flags: ignoreversion
-; Source: "minerd.exe"; DestDir: "{app}"; Flags: ignoreversion
-; Source: "lolMiner.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "windows\xmrigui.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\XMRiGUI"; Filename: "{app}\XMRiGUI.exe"
+Name: "{group}\XMRiGUI"; Filename: "{app}\XMRiGUI.exe"; IconFilename: "{app}\xmrigui.ico"
 Name: "{group}\{cm:UninstallProgram,XMRiGUI}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\XMRiGUI"; Filename: "{app}\XMRiGUI.exe"; Tasks: desktopicon
+Name: "{autodesktop}\XMRiGUI"; Filename: "{app}\XMRiGUI.exe"; Tasks: desktopicon; IconFilename: "{app}\xmrigui.ico"
 
 [Run]
 Filename: "{app}\XMRiGUI.exe"; Description: "{cm:LaunchProgram,XMRiGUI}"; Flags: nowait postinstall skipifsilent
