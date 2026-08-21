@@ -1,8 +1,8 @@
 # XMRiGUI
 
-XMRiGUI is a free and open-source crypto miner for Windows and Linux. It provides a modern, high-performance GUI for [XMRig](https://github.com/xmrig/xmrig) and other popular miners.
+XMRiGUI is a free and open-source crypto miner for Windows and Linux. It provides a modern, high-performance GUI for [XMRig](https://github.com/xmrig/xmrig).
 
-Built with **C++ 17**, **Qt6**, and the latest **CMake 4.3** standard.
+Built with **Python 3** and **GTK 3**.
 
 ![Preview of XMRiGUI](preview.png)
 
@@ -10,8 +10,6 @@ Built with **C++ 17**, **Qt6**, and the latest **CMake 4.3** standard.
 
 ### Supported Miners
 *   **XMRig**: For Monero, Ravencoin, and most CPU-based coins.
-*   **CPUMiner-Multi**: Automatically used for Bitcoin and Litecoin.
-*   **lolMiner**: Automatically used for Ethereum Classic.
 
 ### Key Capabilities
 *   **Multi-Profile Support**: Manage up to 3 different mining configurations simultaneously.
@@ -19,72 +17,102 @@ Built with **C++ 17**, **Qt6**, and the latest **CMake 4.3** standard.
 *   **Real-time Stats**: Live tracking of Hashrate (H/s) and Shares (Accepted/Rejected).
 *   **System Tray Integration**: Run the miner in the background with quick-access controls.
 *   **Cross-Platform**: Native look and feel on both Windows and Linux.
-*   **Auto-Updates**: Checks for new versions of XMRiGUI and XMRig binaries automatically.
-
-### Supported Coins & Algorithms
-*   **Monero** (RandomX)
-*   **Bitcoin** (SHA-256)
-*   **Litecoin** (Scrypt)
-*   **Ethereum Classic** (Etchash)
-*   **Ravencoin** (KawPow)
-*   ...and 20+ other algorithms (Ghostrider, Argon2, AstroBWT, etc.)
 
 ## Installation
 
 ### Windows
-1. Download the latest `XMRiGUI-Windows.zip` from the [Releases](https://github.com/FreetimeMaker/XMRiGUI/releases) page.
-2. Extract the files and run `XMRiGUI.exe`.
+1. Download the latest `XMRiGUI_Setup.exe` from the [Releases](https://github.com/FreetimeMaker/XMRiGUI/releases) page.
+2. Run the installer.
+3. *Note: If you run from source, you need to install GTK3 (e.g., via MSYS2 or the gvsbuild installer).*
+
+> [!WARNING]
+> **Security & Code Signing**
+>
+> XMRiGUI is currently **not** signed with a commercial Code Signing certificate.
+> *   Windows SmartScreen may display a warning ("Windows protected your PC").
+> *   This is standard for many open-source projects due to high certificate costs.
+> *   To proceed, click **"More Info"** and then **"Run Anyway"**.
+> *   Antivirus software may flag this tool as a "Miner" or "PUA" (Potentially Unwanted Application). This is expected behavior for mining software.
 
 ### Linux
-1. Download the `XMRiGUI-Linux.tar.gz`.
-2. Ensure you have Qt6 libraries installed:
-   ```bash
-   sudo apt install qt6-base-dev
-   ```
-3. Run the binary: `./XMRiGUI`
 
-## Security & Code Signing
+#### Debian / Ubuntu (APT)
+1. Download the `.deb` file or use the APT Repository:
 
-### Why is my antivirus flagging this?
-Since XMRiGUI is a crypto mining tool, it is often flagged by antivirus programs and Windows Defender as a "Potentially Unwanted Application" (PUA) or even malware. This is standard behavior for mining software.
-
-### Missing Digital Signature
-Official releases are currently **not** signed with a commercial Code Signing certificate (EV certificate). Such certificates from trusted authorities (like DigiCert or Sectigo) involve high annual costs, which is not feasible for this open-source project at this time.
-
-**What this means for you:**
-*   You might see a **Windows SmartScreen** warning ("Windows protected your PC") when launching the app.
-*   You may need to add an exclusion to your antivirus software for the installation directory or `XMRiGUI.exe`.
-
-**Recommendation:**
-If you do not trust the provided binaries, you can build XMRiGUI from source at any time. The code is fully transparent and available for inspection on GitHub.
-
-## Build from Source
-
-### Requirements
-*   **CMake 4.3+**
-*   **Qt 6.6+** (with Widgets and Network modules)
-*   C++ 17 compatible compiler (MSVC on Windows, GCC/Clang on Linux)
-
-### Compilation
 ```bash
-mkdir build && cd build
-cmake ..
-cmake --build .
+sudo nano /etc/apt/sources.list.d/Freetime-Maker-APT-Repo.list
 ```
 
-### Create Linux Packages (.deb, .rpm)
-To generate installation packages for Debian/Ubuntu or Fedora/openSUSE:
-```bash
-cd build
-cpack
+then add:
+```text
+deb [trusted=yes arch=amd64] https://apt.fury.io/freetimemaker/ /
 ```
-This will create `xmrigui-1.8.0-Linux.deb` and `xmrigui-1.8.0-Linux.rpm` in your build directory.
+
+then run:
+```bash
+sudo apt update
+sudo apt install xmrigui
+```
+
+#### Fedora / Red Hat (RPM)
+1. Download the `.rpm` file or use the YUM Repository:
+
+```bash
+sudo nano /etc/yum.repos.d/freetimemaker.repo
+```
+
+then add:
+```text
+[freetimemaker]
+name=FreetimeMaker Repo
+baseurl=https://yum.fury.io/freetimemaker/
+enabled=1
+gpgcheck=0
+```
+
+then run:
+```bash
+sudo dnf install xmrigui
+```
+
+## Build for Windows (Standalone EXE & Installer)
+
+### 1. Create the Executable
+To create a single `.exe` file that contains everything:
+1. Install Python 3.
+2. Install build tools: `pip install pyinstaller pygobject requests`
+3. Run: `python build_windows.py`
+   The result will be in `dist/XMRiGUI.exe`.
+
+### 2. Create the Installer (Optional)
+1. Install [Inno Setup](https://jrsoftware.org/isinfo.php).
+2. Open the [installer.iss](installer.iss) file.
+3. Click **Compile** to generate `Output/XMRiGUI_Setup.exe`.
+
+## Linux Makefile Commands
+
+If you want to build XMRiGUI from source, you'll need to have:
+* python3
+* gtk3
+* pyinstaller
+* pygobject
+* gir1.2-ayatanaappindicator3-0.1
+  <br>
+  <br>
+
+Build:
+
+`sudo make install`
+
+or if you want deb package:
+
+`make deb`
+<br>
+<br>
 
 ## Command Line Options
 *   `start`: Start mining all active profiles immediately.
 *   `stop`: Stop all active mining processes.
-*   `--open`: Open the main window.
-*   `--close`: Hide to system tray.
 
 ## Contribute
 
