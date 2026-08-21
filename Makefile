@@ -21,16 +21,16 @@ deb:
 	mkdir -p $(package)/usr/share/applications/
 	cp xmrigui.py $(package)/usr/local/bin/xmrigui
 	chmod +x $(package)/usr/local/bin/xmrigui
-	cp xmrig $(package)/opt/xmrigui/
+	cp linux/xmrig $(package)/opt/xmrigui/
 	chmod +x $(package)/opt/xmrigui/xmrig
 	cp xmrigui.png $(package)/usr/share/icons/hicolor/256x256/apps/
 	cp xmrigui.png $(package)/usr/local/bin/
-	cp xmrigui.desktop $(package)/usr/share/applications/
+	cp linux/xmrigui.desktop $(package)/usr/share/applications/
 	dpkg-deb --build --root-owner-group $(package)
 
 rpm:
 	mkdir -p rpmbuild/SOURCES
-	cp xmrigui.py xmrig xmrigui.png xmrigui.desktop rpmbuild/SOURCES/
+	cp xmrigui.py linux/xmrig xmrigui.png linux/xmrigui.desktop rpmbuild/SOURCES/
 	rpmbuild -bb --define "_topdir $(shell pwd)/rpmbuild" linux/xmrigui.spec
 	cp rpmbuild/RPMS/x86_64/*.rpm .
 	rm -rf rpmbuild
