@@ -78,12 +78,18 @@ void XMRiGUIWindow::loadPaths() {
         cudaPluginPath = linAssets + "/libxmrig-cuda.so";
         iconPath = linAssets + "/xmrigui.png";
     } else {
-        xmrigPath = "/opt/xmrigui/xmrig";
+        xmrigPath = "/usr/bin/xmrig";
+        if (!QFile::exists(xmrigPath)) xmrigPath = "/opt/xmrigui/xmrig";
         if (!QFile::exists(xmrigPath)) xmrigPath = appDir + "/xmrig";
+
         cpuminerPath = appDir + "/minerd";
         lolminerPath = appDir + "/lolMiner";
         cudaPluginPath = appDir + "/libxmrig-cuda.so";
+
         iconPath = appDir + "/xmrigui.png";
+        if (!QFile::exists(iconPath)) {
+            iconPath = "/usr/share/icons/hicolor/256x256/apps/xmrigui.png";
+        }
     }
 #endif
     QDir().mkpath(QFileInfo(settingsPath).absolutePath());

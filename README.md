@@ -72,6 +72,14 @@ cmake ..
 cmake --build .
 ```
 
+### Create Linux Packages (.deb, .rpm)
+To generate installation packages for Debian/Ubuntu or Fedora/openSUSE:
+```bash
+cd build
+cpack
+```
+This will create `xmrigui-1.8.0-Linux.deb` and `xmrigui-1.8.0-Linux.rpm` in your build directory.
+
 ## Command Line Options
 *   `start`: Start mining all active profiles immediately.
 *   `stop`: Stop all active mining processes.
