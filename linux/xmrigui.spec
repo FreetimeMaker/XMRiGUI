@@ -1,8 +1,8 @@
 Name:           xmrigui
-Version:        1.8.0
+Version:        1.8.1
 Release:        1%{?dist}
 Summary:        GUI for XMRig crypto miner
-License:        MIT
+License:        Apache-2.0
 URL:            https://github.com/FreetimeMaker/XMRiGUI
 BuildArch:      x86_64
 
@@ -31,5 +31,4 @@ cp %{_sourcedir}/xmrigui.desktop %{buildroot}/usr/share/applications/
 /usr/share/applications/xmrigui.desktop
 
 %changelog
-* Fri Aug 21 2026 Freetime Maker <jamieachatz@gmail.com> - 1.8.0-1
-- Initial RPM release
+* Fri Aug 21 2026 Freetime Maker <jamieachatz@gmail.com> - 1.8.1

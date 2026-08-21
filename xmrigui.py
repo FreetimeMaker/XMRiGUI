@@ -8,12 +8,12 @@ from gi.repository import Gtk, GdkPixbuf, GLib, Gdk
 if sys.platform == "win32":
     import ctypes
     try:
-        myappid = 'freetimemaker.xmrigui.1.7.7' # arbitrary string
+        myappid = 'freetimemaker.xmrigui.1.1.0' # arbitrary string
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
     except:
         pass
 
-APP_VERSION = "v1.7.7"
+APP_VERSION = "v1.8.1"
 
 class Window(Gtk.Window):
     def __init__(self):
@@ -49,9 +49,19 @@ class Window(Gtk.Window):
         if sys.platform == "win32":
             self.settings_path = os.path.join(os.getenv('APPDATA'), 'XMRiGUI', 'xmrigui.json')
             os.makedirs(os.path.dirname(self.settings_path), exist_ok=True)
+            # Look in app dir, then in "windows" subfolder (for development)
             self.xmrig_path = os.path.join(script_dir, 'xmrig.exe')
+            if not os.path.exists(self.xmrig_path):
+                self.xmrig_path = os.path.join(script_dir, 'windows', 'xmrig.exe')
+
             self.cpuminer_path = os.path.join(script_dir, 'minerd.exe')
+            if not os.path.exists(self.cpuminer_path):
+                self.cpuminer_path = os.path.join(script_dir, 'windows', 'minerd.exe')
+
             self.lolminer_path = os.path.join(script_dir, 'lolMiner.exe')
+            if not os.path.exists(self.lolminer_path):
+                self.lolminer_path = os.path.join(script_dir, 'windows', 'lolMiner.exe')
+
             self.cuda_plugin_path = os.path.join(script_dir, 'libxmrig-cuda.dll')
         else:
             if not os.path.exists(os.path.join(script_dir, 'xmrig')) and os.path.exists('/opt/xmrigui'):
@@ -64,7 +74,13 @@ class Window(Gtk.Window):
 
         self.user = os.environ.get('USER') or os.environ.get('USERNAME') or 'user'
         self.icon_path = os.path.join(script_dir, 'xmrigui.png')
-        # If not found, check current working directory
+        # If not found, check standard Linux icon path
+        if not os.path.exists(self.icon_path) and sys.platform != "win32":
+            alt_icon = "/usr/share/icons/hicolor/256x256/apps/xmrigui.png"
+            if os.path.exists(alt_icon):
+                self.icon_path = alt_icon
+
+        # Final fallback check to prevent crash
         if not os.path.exists(self.icon_path):
             self.icon_path = os.path.join(os.getcwd(), 'xmrigui.png')
 
@@ -201,8 +217,11 @@ class Window(Gtk.Window):
             self.set_role("xmrigui")
 
         if os.path.exists(self.icon_path):
-            Gtk.Window.set_default_icon_from_file(self.icon_path)
-            self.set_icon_from_file(self.icon_path)
+            try:
+                Gtk.Window.set_default_icon_from_file(self.icon_path)
+                self.set_icon_from_file(self.icon_path)
+            except Exception as e:
+                print(f"Error loading icon: {e}")
 
         self.set_border_width(20)
         self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
@@ -342,30 +361,6 @@ class Window(Gtk.Window):
         if save:
             self.config[profile]['mine'] = False
             self.save()
-
-    def get_miner_command(self, profile):
-        c = self.config[profile]
-        coin = self.cryptos[c['coin']]
-        pool = c['pool']; user = c['user']; password = c.get('password', '')
-        if coin in ['Bitcoin', 'Litecoin']:
-            cmd = f'"{self.cpuminer_path}" -o {pool} -u {user}'
-            if password: cmd += f' -p {password}'
-            return cmd
-        elif coin == 'Ethereum Classic':
-            cmd = f'"{self.lolminer_path}" --algo ETCHASH --pool {pool} --user {user}'
-            if password: cmd += f' --pass {password}'
-            return cmd
-        else:
-            args = ''
-            if not c.get('default_args', False):
-                args += f' --algo={self.algos[c["coin"]]} --url={pool} --user={user} --pass={password if password else "x"}'
-                args += f' --donate-level={c.get("donate", "1")}'
-                if c.get('threads', '0') != '0': args += f' --threads={c["threads"]} --randomx-init={c["threads"]}'
-                if c.get('cuda', False): args += f' --cuda --cuda-loader="{self.cuda_plugin_path}"'
-                if c.get('opencl', False): args += ' --opencl'
-                if not c.get('cpu', True): args += ' --no-cpu'
-            if c.get('args'): args += f' {c["args"]}'
-            return f'"{self.xmrig_path}" --no-color {args}'
 
     def save(self):
         for profile in self.profiles:

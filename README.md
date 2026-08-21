@@ -40,7 +40,7 @@ Built with **Python 3** and **GTK 3**.
 1. Download the `.deb` file or use the APT Repository:
 
 ```bash
-sudo nano /etc/apt/sources.list.d/Freetime-Maker-APT-Repo.list
+sudo nano /etc/apt/sources.list.d/Freetime-Repo.list
 ```
 
 then add:
@@ -58,13 +58,13 @@ sudo apt install xmrigui
 1. Download the `.rpm` file or use the YUM Repository:
 
 ```bash
-sudo nano /etc/yum.repos.d/freetimemaker.repo
+sudo nano /etc/yum.repos.d/freetime.repo
 ```
 
 then add:
 ```text
 [freetimemaker]
-name=FreetimeMaker Repo
+name=Freetime Repo
 baseurl=https://yum.fury.io/freetimemaker/
 enabled=1
 gpgcheck=0

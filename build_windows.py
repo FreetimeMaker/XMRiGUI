@@ -3,7 +3,7 @@ import subprocess
 import sys
 
 def build():
-    print("Building XMRiGUI v1.8.0 for Windows...")
+    print("Building XMRiGUI v1.8.1 for Windows...")
 
     # Try to install PyInstaller if not present
     try:

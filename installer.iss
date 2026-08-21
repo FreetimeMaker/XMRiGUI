@@ -34,6 +34,9 @@ Source: "dist\XMRiGUI.exe"; DestDir: "{app}"; Flags: ignoreversion
 ; Include assets
 Source: "xmrigui.png"; DestDir: "{app}"; Flags: ignoreversion
 Source: "windows\xmrigui.ico"; DestDir: "{app}"; Flags: ignoreversion
+; Include Miners
+Source: "windows\xmrig.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "windows\WinRing0x64.sys"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\XMRiGUI"; Filename: "{app}\XMRiGUI.exe"; IconFilename: "{app}\xmrigui.ico"
