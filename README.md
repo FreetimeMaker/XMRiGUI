@@ -43,6 +43,21 @@ Built with **C++ 17**, **Qt6**, and the latest **CMake 4.3** standard.
    ```
 3. Run the binary: `./XMRiGUI`
 
+## Security & Code Signing
+
+### Why is my antivirus flagging this?
+Since XMRiGUI is a crypto mining tool, it is often flagged by antivirus programs and Windows Defender as a "Potentially Unwanted Application" (PUA) or even malware. This is standard behavior for mining software.
+
+### Missing Digital Signature
+Official releases are currently **not** signed with a commercial Code Signing certificate (EV certificate). Such certificates from trusted authorities (like DigiCert or Sectigo) involve high annual costs, which is not feasible for this open-source project at this time.
+
+**What this means for you:**
+*   You might see a **Windows SmartScreen** warning ("Windows protected your PC") when launching the app.
+*   You may need to add an exclusion to your antivirus software for the installation directory or `XMRiGUI.exe`.
+
+**Recommendation:**
+If you do not trust the provided binaries, you can build XMRiGUI from source at any time. The code is fully transparent and available for inspection on GitHub.
+
 ## Build from Source
 
 ### Requirements
