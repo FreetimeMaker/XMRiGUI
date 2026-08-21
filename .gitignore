@@ -3,3 +3,4 @@ build
 dist
 xmrigui.spec
 *.deb
+.idea
