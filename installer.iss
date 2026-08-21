@@ -15,7 +15,7 @@ DefaultDirName={autopf}\XMRiGUI
 DefaultGroupName=XMRiGUI
 AllowNoIcons=yes
 ; The following line specifies the icon for the installer itself
-SetupIconFile=xmrigui.png
+SetupIconFile=.\windows\xmrigui.ico
 ; Since there is no certificate, we inform the user
 OutputBaseFilename=XMRiGUI_Setup
 Compression=lzma
